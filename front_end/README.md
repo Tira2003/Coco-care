@@ -1,7 +1,4 @@
 
-  # Create design prototype
-
-  This is a code bundle for Create design prototype. The original project is available at https://www.figma.com/design/laI7kD0oFWEKDjgk8sJ7Y1/Create-design-prototype.
 
   ## Running the code
 

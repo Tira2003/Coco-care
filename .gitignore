@@ -1,0 +1,44 @@
+# Local IDE / agent
+.cursor/
+.vscode/
+.idea/
+
+# Project docs kept local
+Rag data.md
+Rag Data*.md
+Project Proposal - Group 25.pdf
+*.pdf
+IMPLEMENTED_FEATURES.md
+MLMODEL.md
+
+# Plans and notes
+*.plan.md
+plans/
+scripts/
+docs/plans/
+fertilizer.md
+leda*.md
+
+# Logs and debug output
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage artifacts
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+jest-results/
+*.lcov
+
+# OS / temp
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+tmp/
+temp/
