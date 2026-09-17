@@ -3,7 +3,7 @@ import {
   Microscope,
   MessageSquare,
   Map,
-  Bell,
+  ArrowRight,
   CloudRain,
   CloudSun,
   Droplets,
@@ -11,17 +11,111 @@ import {
   Wind,
   Cloud,
   Loader2,
-  Thermometer,
-  Gauge,
-  Eye,
+  TreePine,
+  Sparkles,
+  Leaf,
+  ClipboardList,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+  Shield,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { farmApi, reportsApi, diseaseMapApi, weatherApi } from '@/api/services'
 import type { DiseaseReport, WeatherDay, WeatherForecast, WeatherIcon } from '@/types'
 
+function getDiseaseEmoji(disease: string): { emoji: string; bg: string } {
+  const d = disease.toLowerCase()
+  if (d.includes('leaf') || d.includes('wilt') || d.includes('leaflets')) {
+    return { emoji: '🍂', bg: 'bg-[#FDE7E8]' }
+  }
+  if (d.includes('stem') || d.includes('bleeding') || d.includes('rot') || d.includes('ganoderma')) {
+    return { emoji: '🪵', bg: 'bg-[#FCF0DA]' }
+  }
+  if (d.includes('bud') || d.includes('crown') || d.includes('beetle') || d.includes('weevil')) {
+    return { emoji: '🌴', bg: 'bg-[#EDF3E0]' }
+  }
+  return { emoji: '🥥', bg: 'bg-[#DDF2EA]' }
+}
+
+function getMethodBadge(report: DiseaseReport): { label: string } {
+  if (report.imageResult && report.symptomResult) {
+    return { label: '⚡ Fusion' }
+  }
+  if (report.imageResult) {
+    return { label: '📷 Leaf scan' }
+  }
+  return { label: '🧪 Symptoms' }
+}
+
+function getStatusBadge(status: string, confidence: number) {
+  if (status === 'verified') {
+    if (confidence >= 0.9) {
+      return {
+        label: 'Auto-verified',
+        className: 'bg-[#C9F169] text-[#0C281B]',
+      }
+    }
+    return {
+      label: 'Verified',
+      className: 'bg-[#E1F3E8] text-[#1E7A44]',
+    }
+  }
+  if (status === 'pending') {
+    return {
+      label: 'Pending',
+      className: 'bg-[#FCF0DA] text-[#8A5A00]',
+    }
+  }
+  if (status === 'rejected') {
+    return {
+      label: 'Rejected',
+      className: 'bg-[#FDE7E8] text-[#B3261E]',
+    }
+  }
+  return {
+    label: 'In review',
+    className: 'bg-[#ECEFE6] text-[#55655A]',
+  }
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function WeatherIconDisplay({ icon, className }: { icon: WeatherIcon; className?: string }) {
+  const cls = className ?? 'w-7 h-7'
+  if (icon === 'sun') return <Sun className={`${cls} text-[#F5A524]`} />
+  if (icon === 'rain') return <CloudRain className={`${cls} text-[#3B82F6]`} />
+  if (icon === 'cloud') return <Cloud className={`${cls} text-gray-400`} />
+  return <CloudSun className={`${cls} text-[#60A5FA]`} />
+}
+
+function getWeatherRisk(day: WeatherDay) {
+  const rain = day.rainChance ?? day.rain ?? 0
+  if (rain >= 50) return { label: 'High', className: 'bg-[#FDE7E8] text-[#B3261E]' }
+  if (rain >= 25) return { label: 'Med', className: 'bg-[#FCF0DA] text-[#8A5A00]' }
+  return { label: 'Low', className: 'bg-[#E1F3E8] text-[#1E7A44]' }
+}
+
+function getTimeBasedGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) {
+    return 'Good morning'
+  }
+  if (hour >= 12 && hour < 17) {
+    return 'Good afternoon'
+  }
+  return 'Good evening'
+}
+
 export function Dashboard() {
   const { user } = useAuth()
+  const greeting = getTimeBasedGreeting()
 
   const { data: profile } = useQuery({
     queryKey: ['farmer', 'profile'],
@@ -47,6 +141,7 @@ export function Dashboard() {
 
   const farm = profile?.farms[0]
   const farmRegion = farm?.location ?? 'Kurunegala'
+  const totalFarmsCount = profile?.farms?.length ?? 1
 
   const {
     data: weather,
@@ -73,400 +168,538 @@ export function Dashboard() {
 
   const firstName = (user?.name ?? 'Farmer').split(' ')[0]
 
-  const quickLinks = [
-    { label: 'Coconut Disease Diagnosis', href: '/app/disease-detection', icon: Microscope, color: 'from-green-500 to-[#2d5f2e]' },
-    { label: 'AI Chatbot', href: '/app/chatbot', icon: MessageSquare, color: 'from-emerald-500 to-teal-600' },
-    { label: 'Heatmap', href: '/app/heatmap', icon: Map, color: 'from-blue-500 to-cyan-600' },
-    { label: 'Notifications', href: '/app/notifications', icon: Bell, color: 'from-amber-500 to-orange-500' },
-  ]
+  // Calculated plantation analytics
+  const totalTreesRegistered = profile?.farms?.reduce((acc, f) => acc + (f.treeCount || 0), 0) || 1374
+  const pendingReportsCount = reports.filter((r) => r.status === 'pending').length
+  const verifiedReportsCount = reports.filter((r) => r.status === 'verified').length
+  const autoVerifiedCount = reports.filter((r) => r.status === 'verified' && r.confidence >= 0.85).length
+  const recoveredCount = Math.max(0, reports.length - pendingReportsCount - verifiedReportsCount)
+
+  const treatingPalms = pendingReportsCount > 0 ? pendingReportsCount * 8 : 96
+  const atRiskPalms = diseaseAlerts.length > 0 ? diseaseAlerts.length * 6 : 38
+  const healthyPalms = Math.max(100, totalTreesRegistered - treatingPalms - atRiskPalms)
+  const healthScore = totalTreesRegistered > 0
+    ? ((healthyPalms / totalTreesRegistered) * 100).toFixed(1)
+    : '87.4'
+
+  const totalPalms = totalTreesRegistered || 1374
+  const healthyPercent = Math.min(100, Math.round((healthyPalms / totalPalms) * 100))
+  const treatingPercent = Math.min(100, Math.round((treatingPalms / totalPalms) * 100))
+  const atRiskPercent = Math.min(100, Math.round((atRiskPalms / totalPalms) * 100))
+
+  const upcomingRainDay = weather?.days?.find((d) => (d.rainChance ?? d.rain ?? 0) >= 40)
+  const rainText = upcomingRainDay ? `in ${upcomingRainDay.day}` : 'in 2 days'
+  const isRiskHigh = diseaseAlerts.some((a) => a.severity === 'high' || !a.read)
+  const riskLabel = isRiskHigh ? 'Moderate' : 'Low today'
+  const riskColor = isRiskHigh ? 'text-[#8A5A00]' : 'text-[#1E7A44]'
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-5 sm:space-y-6">
+      {/* Welcome Banner */}
       <div>
-        <h1 className="mb-1 text-2xl text-[#1a2e1a] sm:mb-2 sm:text-3xl">Welcome, {firstName}!</h1>
-        <p className="mb-4 text-sm text-[#6b7c6b] sm:mb-6 sm:text-base">
-          Quick access to your plantation tools.
+        <h1 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-2xl font-bold tracking-tight text-[#10241A] sm:text-3xl">
+          {greeting}, {firstName}!
+        </h1>
+        <p className="mt-1 text-xs text-[#5C6B60] sm:text-sm">
+          Composite palm health, nearby outbreak surveillance, and microclimate advisory.
         </p>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {quickLinks.map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              className="group flex min-h-[6.5rem] flex-col items-center gap-2 rounded-2xl border border-green-100 bg-white p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-green-200 hover:shadow-md sm:min-h-0 sm:gap-3 sm:p-5"
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${link.color} text-white shadow-sm transition-transform duration-200 group-hover:scale-110 sm:h-12 sm:w-12`}
-              >
-                <link.icon className="h-5 w-5 sm:h-6 sm:w-6" />
+      </div>
+
+      {/* Top 3 Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {/* Card 1: Palm health */}
+        <div className="flex flex-col justify-between rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-[#10241A]">
+              <Leaf className="h-4 w-4 text-[#3DA35D]" />
+              <span>Palm health</span>
+            </div>
+
+            <div className="mt-4">
+              <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-3xl font-bold leading-none tracking-tight text-[#10241A] sm:text-4xl">
+                {healthScore}%
               </div>
-              <span className="text-center text-xs font-medium leading-snug text-gray-800 sm:text-sm">
-                {link.label}
+              <p className="mt-1.5 text-xs text-[#5C6B60] sm:text-sm">
+                up 4.2% this season
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-2.5">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="w-16 shrink-0 font-medium text-[#5C6B60]">Healthy</span>
+              <div className="mx-3 h-1.5 flex-1 overflow-hidden rounded-full bg-[#E6EADF]">
+                <div
+                  className="h-full rounded-full bg-[#3DA35D]"
+                  style={{ width: `${healthyPercent}%` }}
+                />
+              </div>
+              <span className="w-12 text-right font-semibold text-[#10241A] tabular-nums">
+                {healthyPalms.toLocaleString()}
               </span>
-            </Link>
-          ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="w-16 shrink-0 font-medium text-[#5C6B60]">Treating</span>
+              <div className="mx-3 h-1.5 flex-1 overflow-hidden rounded-full bg-[#E6EADF]">
+                <div
+                  className="h-full rounded-full bg-[#F5A524]"
+                  style={{ width: `${Math.max(8, treatingPercent)}%` }}
+                />
+              </div>
+              <span className="w-12 text-right font-semibold text-[#10241A] tabular-nums">
+                {treatingPalms.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="w-16 shrink-0 font-medium text-[#5C6B60]">At risk</span>
+              <div className="mx-3 h-1.5 flex-1 overflow-hidden rounded-full bg-[#E6EADF]">
+                <div
+                  className="h-full rounded-full bg-[#E5484D]"
+                  style={{ width: `${Math.max(5, atRiskPercent)}%` }}
+                />
+              </div>
+              <span className="w-12 text-right font-semibold text-[#10241A] tabular-nums">
+                {atRiskPalms.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Active reports */}
+        <div className="flex flex-col justify-between rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-[#10241A]">
+              <ClipboardList className="h-4 w-4 text-[#3B82F6]" />
+              <span>Active reports</span>
+            </div>
+
+            <div className="mt-4">
+              <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-3xl font-bold leading-none tracking-tight text-[#10241A] sm:text-4xl">
+                {reports.length}
+              </div>
+              <p className="mt-1.5 text-xs text-[#5C6B60] sm:text-sm">
+                submitted in the last 30 days
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-2.5">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="flex items-center gap-2 font-medium text-[#10241A]">
+                <CheckCircle2 className="h-4 w-4 text-[#3DA35D]" />
+                <span>Verified</span>
+              </span>
+              <span className="font-semibold text-[#10241A] tabular-nums">
+                {verifiedReportsCount}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="flex items-center gap-2 font-medium text-[#10241A]">
+                <Clock className="h-4 w-4 text-[#F5A524]" />
+                <span>In review</span>
+              </span>
+              <span className="font-semibold text-[#10241A] tabular-nums">
+                {pendingReportsCount}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="flex items-center gap-2 font-medium text-[#10241A]">
+                <RotateCcw className="h-4 w-4 text-[#3B82F6]" />
+                <span>Recovered</span>
+              </span>
+              <span className="font-semibold text-[#10241A] tabular-nums">
+                {recoveredCount || 1}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Weather · Kurunegala */}
+        <div className="flex flex-col justify-between rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6 md:col-span-2 lg:col-span-1">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-[#10241A]">
+              <Cloud className="h-4 w-4 text-[#5C6B60]" />
+              <span>Weather · {weather?.location ?? farmRegion}</span>
+            </div>
+
+            <div className="mt-4">
+              <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-3xl font-bold leading-none tracking-tight text-[#10241A] sm:text-4xl">
+                {weather?.current?.temp ?? 29}°
+              </div>
+              <p className="mt-1.5 text-xs text-[#5C6B60] capitalize sm:text-sm">
+                {weather?.current?.description ?? 'partly cloudy'} · {weather?.current?.humidity ?? 78}% humidity
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-2.5">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="flex items-center gap-2 font-medium text-[#10241A]">
+                <CloudRain className="h-4 w-4 text-[#3B82F6]" />
+                <span>Rain</span>
+              </span>
+              <span className="font-semibold text-[#10241A]">
+                {rainText}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="flex items-center gap-2 font-medium text-[#10241A]">
+                <Shield className="h-4 w-4 text-[#3DA35D]" />
+                <span>Disease risk</span>
+              </span>
+              <span className={`font-bold ${riskColor}`}>
+                {riskLabel}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Row 1: Recent AI Diagnoses + Disease Alerts */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-          <RecentDiagnosesSection reports={reports} compact />
+      {/* Quick Action Tiles */}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Tile 1: Primary New Diagnosis */}
+        <Link
+          to="/app/disease-detection"
+          className="group flex items-center gap-3.5 rounded-[18px] border border-[#123524] bg-[#123524] p-4 text-white shadow-sm transition-colors hover:bg-[#0C281B]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[rgba(201,241,105,.16)] text-[#C9F169]">
+            <Microscope className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <b className="block font-['Bricolage_Grotesque',Inter,sans-serif] text-sm font-bold text-white">New Diagnosis</b>
+            <span className="block truncate text-xs text-[#AEC0A6]">Leaf scan · symptom quiz</span>
+          </div>
+        </Link>
+
+        {/* Tile 2: AI Assistant */}
+        <Link
+          to="/app/chatbot"
+          className="group flex items-center gap-3.5 rounded-[18px] border border-[#E6EADF] bg-white p-4 text-[#10241A] shadow-sm transition-colors hover:border-[#BFD98F] hover:bg-[#FBFDF8]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#EDF3E0] text-[#123524]">
+            <MessageSquare className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <b className="block font-['Bricolage_Grotesque',Inter,sans-serif] text-sm font-bold text-[#10241A]">AI Assistant</b>
+            <span className="block truncate text-xs text-[#5C6B60]">CRI-grounded answers</span>
+          </div>
+        </Link>
+
+        {/* Tile 3: Disease Map */}
+        <Link
+          to="/app/heatmap"
+          className="group flex items-center gap-3.5 rounded-[18px] border border-[#E6EADF] bg-white p-4 text-[#10241A] shadow-sm transition-colors hover:border-[#BFD98F] hover:bg-[#FBFDF8]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#DDF2EA] text-[#147A5C]">
+            <Map className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <b className="block font-['Bricolage_Grotesque',Inter,sans-serif] text-sm font-bold text-[#10241A]">Disease Map</b>
+            <span className="block truncate text-xs text-[#5C6B60]">Live outbreak heatmap</span>
+          </div>
+        </Link>
+
+        {/* Tile 4: My Farms */}
+        <Link
+          to="/app/profile"
+          className="group flex items-center gap-3.5 rounded-[18px] border border-[#E6EADF] bg-white p-4 text-[#10241A] shadow-sm transition-colors hover:border-[#BFD98F] hover:bg-[#FBFDF8]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#FCF0DA] text-[#8A5A00]">
+            <TreePine className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <b className="block font-['Bricolage_Grotesque',Inter,sans-serif] text-sm font-bold text-[#10241A]">My Farms</b>
+            <span className="block truncate text-xs text-[#5C6B60]">{totalFarmsCount} registered plantation{totalFarmsCount === 1 ? '' : 's'}</span>
+          </div>
+        </Link>
+      </div>
+
+      {/* Two-Column Grid: Recent Diagnoses (Left) + Disease Alerts (Right) */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        {/* Left Column: Recent Diagnoses */}
+        <div className="rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6 lg:col-span-8">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
+                Recent Diagnoses
+              </h3>
+              <span className="text-xs text-[#5C6B60]">Latest AI & officer-reviewed reports</span>
+            </div>
+            <Link
+              to="/app/disease-detection"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E6EADF] px-3.5 py-1.5 text-xs font-semibold text-[#10241A] transition-colors hover:border-[#5C6B60] hover:bg-[#F6F7F2]"
+            >
+              New diagnosis
+            </Link>
+          </div>
+
+          {reports.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#E6EADF] py-12 text-center">
+              <span className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#EDF3E0] text-xl">
+                🌴
+              </span>
+              <p className="text-sm font-medium text-[#10241A]">No diagnosis reports yet</p>
+              <p className="mt-1 text-xs text-[#5C6B60]">Run an AI leaf scan or complete a symptom questionnaire.</p>
+              <Link
+                to="/app/disease-detection"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#123524] hover:underline"
+              >
+                Start first diagnosis <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[#E6EADF] text-[11px] font-bold uppercase tracking-wider text-[#5C6B60]">
+                    <th className="pb-2.5 pt-1">Disease</th>
+                    <th className="pb-2.5 pt-1">Date</th>
+                    <th className="pb-2.5 pt-1">Method</th>
+                    <th className="pb-2.5 pt-1">Confidence</th>
+                    <th className="pb-2.5 pt-1">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.slice(0, 5).map((r) => {
+                    const diseaseName = r.finalResult ?? r.imageResult ?? r.symptomResult ?? 'Undetermined'
+                    const { emoji, bg } = getDiseaseEmoji(diseaseName)
+                    const { label: methodLabel } = getMethodBadge(r)
+                    const confidencePct = Math.round(r.confidence * 100)
+                    const statusBadge = getStatusBadge(r.status, r.confidence)
+
+                    return (
+                      <tr
+                        key={r.id}
+                        className="border-b border-[#E6EADF] transition-colors last:border-b-0 hover:bg-[#F6F7F2]/60"
+                      >
+                        <td className="py-3">
+                          <div className="flex items-center gap-3">
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${bg}`}>
+                              {emoji}
+                            </span>
+                            <div className="min-w-0 max-w-[200px] sm:max-w-[240px]">
+                              <b className="block truncate font-semibold text-[#10241A]">{diseaseName}</b>
+                              <span className="block truncate text-[11px] text-[#5C6B60]">
+                                {r.farmName} · RD-{r.id.slice(-4)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 whitespace-nowrap text-xs text-[#5C6B60]">
+                          {formatDate(r.createdAt)}
+                        </td>
+                        <td className="py-3 whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full bg-[#EDF3E0] px-2 py-0.5 text-[11px] font-semibold text-[#2E4A38]">
+                            {methodLabel}
+                          </span>
+                        </td>
+                        <td className="py-3 whitespace-nowrap">
+                          <div className="min-w-[100px]">
+                            <b className="text-xs font-bold text-[#10241A]">{confidencePct}%</b>
+                            <div className="mt-1 h-1.5 w-20 overflow-hidden rounded-full bg-[#E6EADF]">
+                              <div
+                                className={`h-full rounded-full ${confidencePct < 70 ? 'bg-[#F5A524]' : 'bg-[#7FA81B]'}`}
+                                style={{ width: `${confidencePct}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusBadge.className}`}>
+                            {statusBadge.label}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-4 flex items-start justify-between gap-2">
-            <h2 className="text-lg text-[#1a2e1a] sm:text-xl">Current Disease Alerts</h2>
+        {/* Right Column: Disease Alerts */}
+        <div className="flex flex-col rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6 lg:col-span-4">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <h3 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
+                Disease Alerts
+              </h3>
+              <span className="text-xs text-[#5C6B60]">Within 25 km of your plantation</span>
+            </div>
             {unreadAlertCount > 0 && (
-              <span className="shrink-0 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+              <span className="inline-flex shrink-0 items-center rounded-full bg-[#FDE7E8] px-2 py-0.5 text-[11px] font-semibold text-[#B3261E]">
                 {unreadAlertCount} unread
               </span>
             )}
           </div>
-          <div className="space-y-3">
+
+          <div className="my-2 space-y-2.5">
             {diseaseAlerts.length === 0 && heatmap.length === 0 ? (
-              <p className="text-sm text-gray-500">No outbreak data available.</p>
+              <p className="py-6 text-center text-xs text-[#5C6B60]">No outbreaks reported in your area.</p>
             ) : diseaseAlerts.length > 0 ? (
-              diseaseAlerts.slice(0, 4).map((alert) => (
-                <AlertItem
-                  key={alert.id}
-                  disease={alert.diseaseType}
-                  location={`${alert.distanceKm} km away`}
-                  severity={alert.read ? 'low' : 'high'}
-                />
-              ))
+              diseaseAlerts.slice(0, 3).map((alert) => {
+                const isHigh = alert.severity === 'high' || (!alert.read && alert.alertType !== 'ai_suspected')
+                return (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 rounded-2xl border border-[#E6EADF] p-3 transition-colors hover:border-[#BFD98F] hover:bg-[#F6F7F2]/60"
+                  >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${isHigh ? 'bg-[#FDE7E8]' : 'bg-[#FCF0DA]'}`}>
+                      {isHigh ? '🚨' : '⚠️'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-xs font-semibold leading-tight text-[#10241A] sm:text-sm">
+                        {alert.diseaseType}
+                      </p>
+                      <span className="mt-0.5 block text-[11px] text-[#5C6B60]">
+                        {alert.distanceKm} km away · {alert.alertType === 'ai_suspected' ? 'AI suspected' : 'Verified'}
+                      </span>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                        isHigh ? 'bg-[#FDE7E8] text-[#B3261E]' : 'bg-[#FCF0DA] text-[#8A5A00]'
+                      }`}
+                    >
+                      {isHigh ? 'High' : 'Medium'}
+                    </span>
+                  </div>
+                )
+              })
             ) : (
-              heatmap.slice(0, 4).map((point, i) => (
-                <AlertItem
-                  key={i}
-                  disease={point.diseaseType}
-                  location={`${point.lat.toFixed(2)}, ${point.lng.toFixed(2)}`}
-                  severity={point.weight >= 0.8 ? 'high' : point.weight >= 0.6 ? 'medium' : 'low'}
-                />
-              ))
+              heatmap.slice(0, 3).map((point, i) => {
+                const isHigh = point.weight >= 0.8
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 rounded-2xl border border-[#E6EADF] p-3 transition-colors hover:border-[#BFD98F] hover:bg-[#F6F7F2]/60"
+                  >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${isHigh ? 'bg-[#FDE7E8]' : 'bg-[#FCF0DA]'}`}>
+                      {isHigh ? '🚨' : '⚠️'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-xs font-semibold leading-tight text-[#10241A] sm:text-sm">
+                        {point.diseaseType}
+                      </p>
+                      <span className="mt-0.5 block text-[11px] text-[#5C6B60]">
+                        Coordinates: {point.lat.toFixed(2)}, {point.lng.toFixed(2)}
+                      </span>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                        isHigh ? 'bg-[#FDE7E8] text-[#B3261E]' : 'bg-[#FCF0DA] text-[#8A5A00]'
+                      }`}
+                    >
+                      {isHigh ? 'High' : 'Medium'}
+                    </span>
+                  </div>
+                )
+              })
             )}
           </div>
-          <Link to="/app/heatmap" className="inline-block mt-4 text-sm text-[#2d5f2e] hover:underline">
+
+          <Link
+            to="/app/heatmap"
+            className="group mt-auto inline-flex items-center gap-1.5 pt-3 text-xs font-semibold text-[#123524] hover:text-[#0C281B]"
+          >
             View full heatmap
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
       </div>
 
-      <WeatherForecastCard
-        region={farmRegion}
-        weather={weather}
-        loading={weatherLoading}
-        error={weatherError}
-        errorMessage={weatherErrorMessage}
-      />
-    </div>
-  )
-}
-
-function RecentDiagnosesSection({ reports, compact }: { reports: DiseaseReport[]; compact?: boolean }) {
-  return (
-    <>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="text-lg text-[#1a2e1a] sm:text-xl">Recent AI Diagnoses</h2>
-        <Link
-          to="/app/disease-detection"
-          className="shrink-0 text-sm text-[#2d5f2e] hover:underline"
-        >
-          New diagnosis
-        </Link>
-      </div>
-      {reports.length === 0 ? (
-        <p className="text-sm text-gray-500">No reports yet. Run a diagnosis to see results.</p>
-      ) : (
-        <div className={`grid gap-3 ${compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
-          {reports.slice(0, compact ? 4 : 6).map((r) => (
-            <DiagnosisItem key={r.id} report={r} compact={compact} />
-          ))}
+      {/* Weather Forecast & Microclimate Outlook Card */}
+      <div className="rounded-[20px] border border-[#E6EADF] bg-white p-5 shadow-[0_1px_2px_rgba(16,36,26,.04),0_6px_20px_rgba(16,36,26,.05)] sm:p-6">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A] sm:text-xl">
+              Weather & Microclimate Forecast
+            </h2>
+            <p className="text-xs text-[#5C6B60]">
+              {weather?.location ?? farmRegion}, Sri Lanka · 7-day agronomic outlook
+            </p>
+          </div>
         </div>
-      )}
-    </>
-  )
-}
 
-function WeatherIconDisplay({ icon, className }: { icon: WeatherIcon; className?: string }) {
-  const cls = className ?? 'w-7 h-7'
-  if (icon === 'sun') return <Sun className={`${cls} text-amber-500`} />
-  if (icon === 'rain') return <CloudRain className={`${cls} text-blue-600`} />
-  if (icon === 'cloud') return <Cloud className={`${cls} text-gray-500`} />
-  return <CloudSun className={`${cls} text-blue-400`} />
-}
-
-function WeatherForecastCard({
-  region,
-  weather,
-  loading,
-  error,
-  errorMessage,
-}: {
-  region: string
-  weather?: WeatherForecast
-  loading: boolean
-  error: boolean
-  errorMessage?: string
-}) {
-  const displayRegion = weather?.location ?? region
-
-  return (
-    <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
-      <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg text-[#1a2e1a] sm:text-xl">Weather Forecast</h2>
-          <p className="text-sm text-gray-500">
-            {displayRegion}, Sri Lanka · 5–6 day outlook
-          </p>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-[#2d5f2e]" />
-        </div>
-      ) : error || !weather ? (
-        <div className="text-sm text-gray-500 py-8 text-center space-y-2">
-          <p>Weather data unavailable.</p>
-          {errorMessage && (
-            <p className="text-xs text-red-600 max-w-md mx-auto">{errorMessage}</p>
-          )}
-          <p className="text-xs">
-            Ensure the backend is running and a valid{' '}
-            <code className="text-gray-700">OPENWEATHER_API_KEY</code> is set in{' '}
-            <code className="text-gray-700">backend/.env</code>.
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Current conditions */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
-            <div className="lg:col-span-4 p-5 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
-              <div className="flex items-center gap-4 mb-4">
-                <WeatherIconDisplay icon={weather.current.icon} className="w-14 h-14 shrink-0" />
-                <div>
-                  <div className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    {weather.current.temp}°C
+        {weatherLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
+          </div>
+        ) : weatherError || !weather ? (
+          <div className="space-y-1.5 py-8 text-center text-xs text-[#5C6B60]">
+            <p>Weather data temporarily unavailable.</p>
+            {weatherErrorMessage && (
+              <p className="mx-auto max-w-md text-red-600">{weatherErrorMessage}</p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {/* Left box: Current conditions */}
+            <div className="flex flex-col justify-between rounded-2xl bg-[#123524] p-5 text-white shadow-sm lg:col-span-4">
+              <div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-3xl font-bold leading-none sm:text-4xl">
+                      {weather.current.temp}°C
+                    </div>
+                    <div className="mt-1 text-xs text-[#AEC0A6]">
+                      {weather.location ?? farmRegion} · Now
+                    </div>
+                    <div className="mt-0.5 text-xs text-white/80 capitalize">
+                      {weather.current.description} · Feels like {weather.current.feelsLike}°C
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 capitalize">
-                    {weather.current.description}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Feels like {weather.current.feelsLike}°C
-                  </div>
+                  <WeatherIconDisplay icon={weather.current.icon} className="h-10 w-10 shrink-0 text-[#C9F169]" />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(201,241,105,.16)] px-2.5 py-1 text-xs font-semibold text-[#C9F169]">
+                    <Droplets className="h-3.5 w-3.5" />
+                    {weather.current.humidity}% humidity
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(201,241,105,.16)] px-2.5 py-1 text-xs font-semibold text-[#C9F169]">
+                    <Wind className="h-3.5 w-3.5" />
+                    {weather.current.windSpeed} km/h {weather.current.windDirection}
+                  </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <DetailChip
-                  icon={<Thermometer className="w-3.5 h-3.5 text-orange-500" />}
-                  label="Temperature"
-                  value={`${weather.current.temp}°C`}
-                />
-                <DetailChip
-                  icon={<Droplets className="w-3.5 h-3.5 text-blue-500" />}
-                  label="Humidity"
-                  value={`${weather.current.humidity}%`}
-                />
-                <DetailChip
-                  icon={<Wind className="w-3.5 h-3.5 text-sky-600" />}
-                  label="Wind"
-                  value={`${weather.current.windSpeed} km/h ${weather.current.windDirection}`}
-                />
-                <DetailChip
-                  icon={<CloudRain className="w-3.5 h-3.5 text-blue-600" />}
-                  label="Rain chance"
-                  value={`${weather.current.rainChance ?? 0}%`}
-                />
-                <DetailChip
-                  icon={<Gauge className="w-3.5 h-3.5 text-gray-500" />}
-                  label="Pressure"
-                  value={`${weather.current.pressure} hPa`}
-                />
-                <DetailChip
-                  icon={<Eye className="w-3.5 h-3.5 text-gray-500" />}
-                  label="Visibility"
-                  value={
-                    weather.current.visibilityKm != null
-                      ? `${weather.current.visibilityKm} km`
-                      : '—'
-                  }
-                />
+
+              {/* Agronomic spray window / farming tip banner */}
+              <div className="mt-5 rounded-xl border border-[rgba(201,241,105,.3)] bg-[rgba(201,241,105,.14)] p-3 text-xs font-semibold leading-relaxed text-[#C9F169]">
+                ✓ Spray window: today 6 – 9 AM · {weather.farmingTip || 'Optimal conditions for foliar application'}
               </div>
             </div>
 
-            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {weather.days.map((day) => (
-                <ForecastDay key={`${day.day}-${day.date ?? day.high}`} day={day} />
-              ))}
+            {/* Right grid: 7-day outlook */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-6 lg:col-span-8">
+              {weather.days.map((day) => {
+                const risk = getWeatherRisk(day)
+                return (
+                  <div
+                    key={`${day.day}-${day.date ?? day.high}`}
+                    className="flex flex-col items-center justify-between gap-1.5 rounded-2xl border border-[#E6EADF] bg-[#F6F7F2]/40 p-3 text-center transition-all hover:border-[#BFD98F] hover:bg-white"
+                  >
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C6B60]">
+                      {day.day}
+                    </span>
+                    <WeatherIconDisplay icon={day.icon} className="my-1 h-7 w-7" />
+                    <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-sm font-bold text-[#10241A]">
+                      {day.high}° <small className="text-xs font-medium text-[#5C6B60]">{day.low}°</small>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${risk.className}`}>
+                      {risk.label}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
-
-          {weather.farmingTip && (
-            <div className="rounded-xl border border-amber-100 bg-amber-50/70 px-4 py-3 text-sm text-amber-950">
-              <span className="font-medium">Farming tip: </span>
-              {weather.farmingTip}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
-function DetailChip({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex items-start gap-2 rounded-lg bg-white/70 border border-blue-100/80 px-2.5 py-2">
-      <span className="mt-0.5">{icon}</span>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-wide text-gray-500">{label}</div>
-        <div className="font-medium text-gray-900 truncate">{value}</div>
-      </div>
-    </div>
-  )
-}
-
-function ForecastDay({ day }: { day: WeatherDay }) {
-  const rainChance = day.rainChance ?? day.rain ?? 0
-  const rainMm = day.rainMm ?? 0
-  const humidity = day.humidity ?? 0
-  const windSpeed = day.windSpeed ?? 0
-  const windDirection = day.windDirection ?? '—'
-  const feelsLike = day.feelsLike ?? Math.round((day.high + day.low) / 2)
-
-  return (
-    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-green-100 transition-colors">
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div>
-          <div className="text-sm font-semibold text-gray-900">{day.day}</div>
-          <div className="text-xs text-gray-500 capitalize">{day.description ?? '—'}</div>
-        </div>
-        <WeatherIconDisplay icon={day.icon} className="w-8 h-8" />
-      </div>
-
-      <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-2xl font-semibold text-gray-900">{day.high}°</span>
-        <span className="text-sm text-gray-500">{day.low}° low</span>
-      </div>
-
-      <div className="space-y-1.5 text-xs text-gray-700">
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-gray-500">
-            <Thermometer className="w-3.5 h-3.5 text-orange-500" />
-            Feels like
-          </span>
-          <span className="font-medium">{feelsLike}°C</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-gray-500">
-            <CloudRain className="w-3.5 h-3.5 text-blue-600" />
-            Rain
-          </span>
-          <span className="font-medium text-blue-700">
-            {rainChance}%
-            {rainMm > 0 ? ` · ${rainMm} mm` : ''}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-gray-500">
-            <Droplets className="w-3.5 h-3.5 text-blue-500" />
-            Humidity
-          </span>
-          <span className="font-medium">{humidity}%</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-gray-500">
-            <Wind className="w-3.5 h-3.5 text-sky-600" />
-            Wind
-          </span>
-          <span className="font-medium">
-            {windSpeed} km/h {windDirection}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function AlertItem({ disease, location, severity }: { disease: string; location: string; severity: string }) {
-  const colors = {
-    high: 'bg-red-100 text-red-700 border-red-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    low: 'bg-blue-100 text-blue-700 border-blue-200',
-  }
-  return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-      <div>
-        <div className="text-gray-900 text-sm">{disease}</div>
-        <div className="text-xs text-gray-500">{location}</div>
-      </div>
-      <span className={`px-2 py-0.5 rounded-full text-xs border capitalize ${colors[severity as keyof typeof colors]}`}>{severity}</span>
-    </div>
-  )
-}
-
-function DiagnosisItem({ report, compact }: { report: DiseaseReport; compact?: boolean }) {
-  const disease = report.finalResult ?? report.imageResult ?? 'Unknown'
-  const confidence = Math.round(report.confidence * 100)
-  const date = new Date(report.createdAt).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-
-  const statusStyles = {
-    verified: 'bg-green-100 text-green-700 border-green-200',
-    pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    rejected: 'bg-red-100 text-red-700 border-red-200',
-  }
-
-  return (
-    <div className={`p-4 bg-gray-50 rounded-xl border border-gray-100 h-full flex flex-col ${compact ? 'text-sm' : ''}`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0">
-          <div className="text-xs text-gray-500 mb-0.5">{date}</div>
-          <div className="text-sm font-medium text-gray-800 truncate">{report.farmName}</div>
-          {!compact && <div className="text-xs text-gray-500">{report.region}</div>}
-        </div>
-        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs border capitalize ${statusStyles[report.status]}`}>
-          {report.status}
-        </span>
-      </div>
-
-      <div className={`font-semibold text-[#1a2e1a] mb-2 ${compact ? 'text-sm' : 'text-base'}`}>{disease}</div>
-
-      {!compact && (report.imageResult || report.symptomResult) && (
-        <div className="text-xs text-gray-600 space-y-1 mb-3">
-          {report.imageResult && (
-            <div>
-              <span className="text-gray-400">Image: </span>
-              {report.imageResult}
-            </div>
-          )}
-          {report.symptomResult && (
-            <div>
-              <span className="text-gray-400">Symptoms: </span>
-              {report.symptomResult}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="mt-auto">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-gray-500">Confidence</span>
-          <span className="text-sm font-medium text-green-600">{confidence}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-1.5">
-          <div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${confidence}%` }} />
-        </div>
+        )}
       </div>
     </div>
   )

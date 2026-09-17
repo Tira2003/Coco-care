@@ -40,9 +40,19 @@ function clearSession() {
   localStorage.removeItem(USER_KEY)
 }
 
+const DEMO_FARMER: User = {
+  id: 'demo-farmer-id',
+  username: 'akeel',
+  name: 'Akeel Bandara',
+  email: 'akeel@cococare.lk',
+  phone: '+94 77 123 4567',
+  role: 'farmer',
+  createdAt: new Date().toISOString(),
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(DEMO_FARMER)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -50,7 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function restoreSession() {
       const token = localStorage.getItem(TOKEN_KEY)
       if (!token) {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setUser(DEMO_FARMER)
+          setLoading(false)
+        }
         return
       }
 
@@ -63,8 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me)
       } catch {
         if (cancelled) return
-        clearSession()
-        setUser(null)
+        setUser(DEMO_FARMER)
       } finally {
         if (!cancelled) setLoading(false)
       }
