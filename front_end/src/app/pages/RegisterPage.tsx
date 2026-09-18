@@ -206,9 +206,9 @@ export function RegisterPage() {
       const emailTrimmed = formData.email.trim()
       const acreageBySize: Record<string, number> = {
         'Less than 1 acre': 0.5,
-        '1 – 5 acres': 3,
-        '5 – 20 acres': 12.5,
-        '20 – 50 acres': 35,
+        '1-5 acres': 3,
+        '5-20 acres': 12.5,
+        '20-50 acres': 35,
         'More than 50 acres': 60,
       }
       const acreage = acreageBySize[formData.plantationSize] ?? 1
@@ -708,9 +708,9 @@ export function RegisterPage() {
                           >
                             <option value="" disabled>Select plantation size</option>
                             <option value="Less than 1 acre">Less than 1 acre</option>
-                            <option value="1 – 5 acres">1 – 5 acres</option>
-                            <option value="5 – 20 acres">5 – 20 acres</option>
-                            <option value="20 – 50 acres">20 – 50 acres</option>
+                            <option value="1-5 acres">1-5 acres</option>
+                            <option value="5-20 acres">5-20 acres</option>
+                            <option value="20-50 acres">20-50 acres</option>
                             <option value="More than 50 acres">More than 50 acres</option>
                           </select>
                           <span className="absolute right-3.5 text-[#5C6B60] pointer-events-none">

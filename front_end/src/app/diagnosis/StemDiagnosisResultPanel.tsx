@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { DiagnosisResult } from '@/types'
+import { AskOfficerCta } from '@/app/components/AskOfficerCta'
 import { formatPercentage, toPercentageNumber } from '@/app/diagnosis/formatPercentage'
 
 const BAR_COLORS = [
@@ -191,10 +192,15 @@ export function StemDiagnosisResultPanel({ result }: { result: DiagnosisResult }
       </motion.div>
 
       {/* Alerts */}
-      {result.officerAlert ? (
-        <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{result.officerAlert}</span>
+      {result.officerAlert || d.officerReferral ? (
+        <div className="space-y-2">
+          {result.officerAlert ? (
+            <div className="flex gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{result.officerAlert}</span>
+            </div>
+          ) : null}
+          <AskOfficerCta reportId={result.id} />
         </div>
       ) : null}
       {d.rbbCrossCheckRpw ? (

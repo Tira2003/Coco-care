@@ -173,6 +173,43 @@ export interface ChatConversation {
   createdAt: string
 }
 
+export type ConsultationStatus = 'open' | 'resolved'
+export type ConsultationSender = 'farmer' | 'officer'
+export type ConsultationInbox = 'needs_reply' | 'waiting' | 'resolved'
+
+export interface ConsultationMessage {
+  id: string
+  consultationId: string
+  senderRole: ConsultationSender
+  senderUserId: string
+  content: string
+  createdAt: string
+}
+
+export interface ConsultationSummary {
+  id: string
+  topic: string
+  status: ConsultationStatus
+  lastSender: ConsultationSender
+  inbox: ConsultationInbox
+  district: string
+  farmId?: string
+  farmName?: string
+  reportId?: string
+  reportLabel?: string
+  farmerName: string
+  officerName?: string
+  lastMessage: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConsultationThread extends ConsultationSummary {
+  farmerPhone?: string
+  reportStatus?: string
+  messages: ConsultationMessage[]
+}
+
 export interface KnowledgeArticle {
   id: string
   title: string

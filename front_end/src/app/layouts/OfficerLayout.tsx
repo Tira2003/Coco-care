@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import {
+  ClipboardList,
   LogOut,
-  Phone,
   Mail,
   MapPin,
+  MessageSquare,
+  Phone,
   Shield,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -59,6 +61,30 @@ export function OfficerLayout() {
                 {user.assignedRegion}
               </span>
             ) : null}
+            <nav className="ml-1 flex min-w-0 items-center gap-1 overflow-x-auto">
+              <Link
+                to="/officer/reports"
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+                  location.pathname.startsWith('/officer/reports')
+                    ? 'bg-[#2d5f2e] text-white'
+                    : 'text-gray-600 hover:bg-green-50'
+                }`}
+              >
+                <ClipboardList className="h-4 w-4" />
+                Reports
+              </Link>
+              <Link
+                to="/officer/consultations"
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+                  location.pathname.startsWith('/officer/consultations')
+                    ? 'bg-[#2d5f2e] text-white'
+                    : 'text-gray-600 hover:bg-green-50'
+                }`}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Consultations
+              </Link>
+            </nav>
           </div>
 
           <div className="relative shrink-0" ref={profileRef}>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { X, MapPin, Smartphone, Settings, HelpCircle, LogOut, ChevronRight } from 'lucide-react'
+import { X, MapPin, Smartphone, Settings, HelpCircle, LogOut, ChevronRight, UserRound } from 'lucide-react'
 
 interface MobileProfileSheetProps {
   isOpen: boolean
@@ -98,6 +98,18 @@ export function MobileProfileSheet({
             <div className="flex items-center gap-3">
               <MapPin className="w-[18px] h-[18px] text-[#55655A]" />
               <span>My farm details</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
+          </Link>
+
+          <Link
+            to="/app/consultations"
+            onClick={onClose}
+            className="flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <UserRound className="w-[18px] h-[18px] text-[#55655A]" />
+              <span>Officer consultations</span>
             </div>
             <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
           </Link>

@@ -12,6 +12,9 @@ import type {
   DiseaseMapStats,
   ChatMessage,
   ChatConversation,
+  ConsultationSummary,
+  ConsultationThread,
+  CreateConsultationPayload,
   DiagnosisPayload,
   DiagnosisResult,
   WeatherForecast,
@@ -174,6 +177,56 @@ export const chatApi = {
       '/api/chat',
       { conversationId, message },
       { timeout: 60_000 },
+    )
+    return data
+  },
+}
+
+export const consultationsApi = {
+  list: async () => {
+    const { data } = await apiClient.get<ConsultationSummary[]>('/api/consultations')
+    return data
+  },
+  get: async (id: string) => {
+    const { data } = await apiClient.get<ConsultationThread>(`/api/consultations/${id}`)
+    return data
+  },
+  create: async (payload: CreateConsultationPayload) => {
+    const { data } = await apiClient.post<ConsultationThread>('/api/consultations', payload)
+    return data
+  },
+  reply: async (id: string, content: string) => {
+    const { data } = await apiClient.post<ConsultationThread>(
+      `/api/consultations/${id}/messages`,
+      { content },
+    )
+    return data
+  },
+  resolve: async (id: string) => {
+    const { data } = await apiClient.post<ConsultationThread>(`/api/consultations/${id}/resolve`)
+    return data
+  },
+}
+
+export const officerConsultationsApi = {
+  list: async () => {
+    const { data } = await apiClient.get<ConsultationSummary[]>('/api/officer/consultations')
+    return data
+  },
+  get: async (id: string) => {
+    const { data } = await apiClient.get<ConsultationThread>(`/api/officer/consultations/${id}`)
+    return data
+  },
+  reply: async (id: string, content: string) => {
+    const { data } = await apiClient.post<ConsultationThread>(
+      `/api/officer/consultations/${id}/messages`,
+      { content },
+    )
+    return data
+  },
+  resolve: async (id: string) => {
+    const { data } = await apiClient.post<ConsultationThread>(
+      `/api/officer/consultations/${id}/resolve`,
     )
     return data
   },
