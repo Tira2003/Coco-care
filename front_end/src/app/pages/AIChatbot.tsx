@@ -25,6 +25,12 @@ import {
 } from '@/app/components/ui/dialog'
 
 const ACTIVE_CHAT_KEY = 'coco_active_chat'
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isConversationId(value: string | null): value is string {
+  return Boolean(value && UUID_RE.test(value))
+}
 
 /** Keep in sync with backend/data/rag-suggested-questions.json */
 const suggestedQuestions = [
@@ -57,6 +63,18 @@ function parseSourceTitle(content: string): { body: string; sourceTitle: string 
   return { body, sourceTitle: title || null }
 }
 
+function toPlainChatText(text: string) {
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(^|[^\w/])\*(?!\s)([^*\n]+?)\*(?=$|[^\w])/g, '$1$2')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/`{1,3}([^`]+)`{1,3}/g, '$1')
+    .replace(/^[ \t]*[-*+]\s+/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function MessageContent({
   content,
   role,
@@ -74,7 +92,7 @@ function MessageContent({
 
   return (
     <div>
-      <div className="whitespace-pre-wrap">{body}</div>
+      <div className="whitespace-pre-wrap">{toPlainChatText(body)}</div>
       {sourceTitle ? (
         <div className="mt-2.5 pt-2 border-t border-[#E6EADF]/60">
           <button
@@ -95,9 +113,10 @@ export function AIChatbot() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const firstName = (user?.name ?? 'Sunil').split(' ')[0]
-  const [activeId, setActiveId] = useState<string | null>(() =>
-    localStorage.getItem(ACTIVE_CHAT_KEY),
-  )
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    const stored = localStorage.getItem(ACTIVE_CHAT_KEY)
+    return isConversationId(stored) ? stored : null
+  })
   const activeIdRef = useRef<string | null>(activeId)
   const [input, setInput] = useState('')
   const [sendError, setSendError] = useState('')
@@ -213,7 +232,15 @@ export function AIChatbot() {
   }
 
   useEffect(() => {
-    if (conversationsLoading || conversations.length === 0) return
+    if (conversationsLoading) return
+    if (conversations.length === 0) {
+      if (activeIdRef.current) {
+        activeIdRef.current = null
+        setActiveId(null)
+        localStorage.removeItem(ACTIVE_CHAT_KEY)
+      }
+      return
+    }
     const exists = activeIdRef.current && conversations.some((c) => c.id === activeIdRef.current)
     if (!exists) {
       openConversation(conversations[0].id)
@@ -252,19 +279,7 @@ export function AIChatbot() {
 
   const sendMutation = useMutation({
     mutationFn: async ({ conversationId, message }: { conversationId: string; message: string }) => {
-      try {
-        return await chatApi.send(conversationId, message)
-      } catch {
-        // Fallback demo response if backend LLM API is unavailable
-        await new Promise((r) => setTimeout(r, 600))
-        return {
-          id: 'res-' + Date.now(),
-          conversationId,
-          role: 'assistant' as const,
-          content: `Ayubowan! 🌴 Regarding your coconut palm query:\n\nBased on official Coconut Research Institute (CRI) guidelines, ensure optimal crown sanitation, inspect fronds for early pest infestation, and maintain regular fertilizer application during the wet season.\n\nSource: CRI Advisory Circular C-08`,
-          createdAt: new Date().toISOString(),
-        }
-      }
+      return chatApi.send(conversationId, message)
     },
     onSuccess: (data) => {
       setSendError('')
@@ -282,27 +297,30 @@ export function AIChatbot() {
       queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] })
     },
     onError: () => {
-      setSendError('')
+      setSendError('Could not reach the CRI assistant. Please try again.')
     },
   })
 
   const sendMessage = async (message: string) => {
     const trimmed = message.trim()
     if (!trimmed || sendMutation.isPending) return
-    let targetId = activeId
+    let targetId = isConversationId(activeId) ? activeId : null
     if (!targetId) {
       try {
         const newConv = await chatApi.createConversation()
+        queryClient.setQueryData<ChatConversation[]>(['chat', 'conversations'], (old) => {
+          const list = old ?? []
+          return [newConv, ...list.filter((c) => c.id !== newConv.id)]
+        })
+        queryClient.setQueryData(['chat', 'messages', newConv.id], [])
         targetId = newConv.id
         openConversation(newConv.id)
       } catch {
-        const localId = 'chat-' + Date.now()
-        targetId = localId
-        openConversation(localId)
+        setSendError('Could not start a conversation. Please try again.')
+        return
       }
     }
 
-    // Optimistically add user message to cache so it shows immediately
     const userMsg: ChatMessage = {
       id: 'usr-' + Date.now(),
       conversationId: targetId,
@@ -316,7 +334,13 @@ export function AIChatbot() {
     ])
 
     setSendError('')
-    await sendMutation.mutateAsync({ conversationId: targetId, message: trimmed })
+    try {
+      await sendMutation.mutateAsync({ conversationId: targetId, message: trimmed })
+    } catch {
+      queryClient.setQueryData<ChatMessage[]>(['chat', 'messages', targetId], (old) =>
+        (old ?? []).filter((m) => m.id !== userMsg.id),
+      )
+    }
   }
 
   const handleSend = async () => {
@@ -368,7 +392,7 @@ export function AIChatbot() {
           className="inline-flex items-center gap-1 rounded-full bg-[#C9F169] px-3 py-1 text-xs font-bold text-[#123524] transition-all hover:bg-[#d8fa7e] disabled:opacity-50"
         >
           {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-          + New
+          New
         </button>
       </div>
 
@@ -674,7 +698,7 @@ export function AIChatbot() {
           ref={scrollRef}
           className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin"
         >
-          {!activeId || messagesLoading ? (
+          {messagesLoading ? (
             <div className="my-auto flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
             </div>
@@ -783,12 +807,12 @@ export function AIChatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about any coconut issue…"
-            disabled={!activeId}
+            disabled={sendMutation.isPending}
             className="h-11 flex-1 rounded-full border border-[#E6EADF] bg-[#F6F7F2] px-4 text-xs sm:text-sm text-[#10241A] placeholder-[#5C6B60] outline-none transition-colors focus:border-[#123524] focus:bg-white disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={!input.trim() || sendMutation.isPending || !activeId}
+            disabled={!input.trim() || sendMutation.isPending}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#123524] text-[#C9F169] transition-all hover:bg-[#0C281B] disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Send"
           >

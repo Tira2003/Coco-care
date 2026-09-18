@@ -157,3 +157,26 @@ export interface DiseaseReport {
   createdAt: string
   reviewComment?: string
 }
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+  conversationId: string
+}
+
+export interface ChatConversation {
+  id: string
+  title: string
+  updatedAt: string
+  createdAt: string
+}
+
+export interface KnowledgeArticle {
+  id: string
+  title: string
+  source: string
+  content: string
+  sourceUrl?: string | null
+}

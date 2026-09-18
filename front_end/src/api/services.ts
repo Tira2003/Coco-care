@@ -170,10 +170,11 @@ export const chatApi = {
     return data
   },
   send: async (conversationId: string, message: string) => {
-    const { data } = await apiClient.post<ChatMessage>('/api/chat', {
-      conversationId,
-      message,
-    })
+    const { data } = await apiClient.post<ChatMessage>(
+      '/api/chat',
+      { conversationId, message },
+      { timeout: 60_000 },
+    )
     return data
   },
 }
