@@ -44,16 +44,39 @@ export interface SystemHealth {
 }
 
 export type NotificationAudience = 'all' | 'farmers' | 'officers'
+export type InboxSource = 'broadcast' | 'disease' | 'report' | 'consultation' | 'digest'
+export type InboxKind = 'alert' | 'success' | 'info' | 'message'
+export type InboxCategory = 'announcement' | 'outbreak' | 'report' | 'consultation'
 
-export interface AppNotification {
+export interface InboxNotification {
+  id: string
+  source: InboxSource
+  kind: InboxKind
+  category: InboxCategory
+  title: string
+  message: string
+  href?: string
+  read: boolean
+  createdAt: string
+}
+
+export interface InboxResponse {
+  items: InboxNotification[]
+  unreadCount: number
+}
+
+export interface BroadcastNotification {
   id: string
   title: string
   message: string
   audience: NotificationAudience
   createdBy?: string | null
   createdAt: string
-  read: boolean
+  recipientEstimate?: number
 }
+
+/** @deprecated Use BroadcastNotification or InboxNotification */
+export type AppNotification = BroadcastNotification & { read?: boolean }
 
 export interface Farm {
   id: string

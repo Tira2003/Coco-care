@@ -173,6 +173,38 @@ export interface ChatConversation {
   createdAt: string
 }
 
+export type NotificationAudience = 'all' | 'farmers' | 'officers'
+export type InboxSource = 'broadcast' | 'disease' | 'report' | 'consultation' | 'digest'
+export type InboxKind = 'alert' | 'success' | 'info' | 'message'
+export type InboxCategory = 'announcement' | 'outbreak' | 'report' | 'consultation'
+
+export interface InboxNotification {
+  id: string
+  source: InboxSource
+  kind: InboxKind
+  category: InboxCategory
+  title: string
+  message: string
+  href?: string
+  read: boolean
+  createdAt: string
+}
+
+export interface InboxResponse {
+  items: InboxNotification[]
+  unreadCount: number
+}
+
+export interface BroadcastNotification {
+  id: string
+  title: string
+  message: string
+  audience: NotificationAudience
+  createdBy?: string | null
+  createdAt: string
+  recipientEstimate?: number
+}
+
 export type ConsultationStatus = 'open' | 'resolved'
 export type ConsultationSender = 'farmer' | 'officer'
 export type ConsultationInbox = 'needs_reply' | 'waiting' | 'resolved'

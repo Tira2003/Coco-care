@@ -13,6 +13,7 @@ import {
   listAlertsForFarmer,
   listOutbreakRows,
   markAlertRead,
+  markAllAlertsRead,
   upsertAlert,
 } from './diseaseMap.repository.js'
 import type { HeatmapQuery, NearbyQuery } from './diseaseMap.schemas.js'
@@ -137,4 +138,8 @@ export async function readAlert(userId: string, alertId: string) {
   const alert = await markAlertRead(alertId, userId)
   if (!alert) throw notFound('Alert not found')
   return alert
+}
+
+export async function readAllAlerts(userId: string) {
+  await markAllAlertsRead(userId)
 }

@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
-import { diseaseMapApi, farmApi, reportsApi, notificationsApi } from '@/api/services'
+import { farmApi, reportsApi, notificationsApi } from '@/api/services'
 import {
   DesktopSidebar,
   DesktopHeader,
@@ -26,38 +26,40 @@ export function DashboardLayout() {
   const profileRef = useRef<HTMLDivElement>(null)
   const mainRef = useRef<HTMLElement>(null)
 
-  const { data: diseaseAlerts = [] } = useQuery({
-    queryKey: ['disease-map', 'alerts'],
-    queryFn: diseaseMapApi.alerts,
-  })
-  const { data: broadcasts = [] } = useQuery({
-    queryKey: ['notifications', 'list'],
+  const { data: inbox } = useQuery({
+    queryKey: ['notifications', 'inbox'],
     queryFn: notificationsApi.list,
+    refetchInterval: 20_000,
   })
-  const unreadAlertsCount =
-    diseaseAlerts.filter((a) => !a.read).length + broadcasts.filter((b) => !b.read).length
+  const notifications = inbox?.items ?? []
+  const unreadAlertsCount = inbox?.unreadCount ?? 0
 
   const { data: farmerReports = [] } = useQuery({
     queryKey: ['reports', 'my'],
     queryFn: reportsApi.my,
   })
 
-  const markDiseaseAlertReadMutation = useMutation({
-    mutationFn: diseaseMapApi.markAlertRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disease-map', 'alerts'] }),
-  })
-  const markBroadcastReadMutation = useMutation({
+  const markReadMutation = useMutation({
     mutationFn: notificationsApi.markRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['disease-map', 'alerts'] })
+    },
+  })
+  const dismissMutation = useMutation({
+    mutationFn: notificationsApi.dismiss,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+  const markAllMutation = useMutation({
+    mutationFn: notificationsApi.markAllRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['disease-map', 'alerts'] })
+    },
   })
 
   const handleMarkAllNotificationsRead = async () => {
-    const unreadAlerts = diseaseAlerts.filter((a) => !a.read)
-    const unreadBroadcasts = broadcasts.filter((b) => !b.read)
-    await Promise.all([
-      ...unreadAlerts.map((a) => markDiseaseAlertReadMutation.mutateAsync(a.id)),
-      ...unreadBroadcasts.map((b) => markBroadcastReadMutation.mutateAsync(b.id)),
-    ])
+    await markAllMutation.mutateAsync()
   }
 
   const { data: farmerProfile } = useQuery({
@@ -146,6 +148,11 @@ export function DashboardLayout() {
           unreadAlertsCount={unreadAlertsCount}
           initials={initials}
           userName={user?.name}
+          notifications={notifications}
+          onMarkRead={(item) => {
+            if (!item.read) markReadMutation.mutate(item.id)
+          }}
+          onMarkAllRead={handleMarkAllNotificationsRead}
         />
 
         {/* Main content area */}
@@ -184,10 +191,13 @@ export function DashboardLayout() {
       <MobileNotificationsSheet
         isOpen={mobileNotificationsSheetOpen}
         onClose={() => setMobileNotificationsSheetOpen(false)}
-        diseaseAlerts={diseaseAlerts}
-        broadcasts={broadcasts}
+        notifications={notifications}
         unreadAlertsCount={unreadAlertsCount}
+        onMarkRead={(item) => {
+          if (!item.read) markReadMutation.mutate(item.id)
+        }}
         onMarkAllRead={handleMarkAllNotificationsRead}
+        onDismiss={(item) => dismissMutation.mutate(item.id)}
       />
     </div>
   )
