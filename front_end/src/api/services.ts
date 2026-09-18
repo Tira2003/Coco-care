@@ -295,7 +295,12 @@ export const notificationsApi = {
 }
 
 export const weatherApi = {
-  forecast: async (params: { lat?: number; lon?: number; location?: string }) => {
+  forecast: async (params?: {
+    farmId?: string
+    lat?: number
+    lon?: number
+    location?: string
+  }) => {
     const { data } = await apiClient.get<WeatherForecast>('/api/weather/forecast', {
       params,
     })

@@ -34,3 +34,126 @@ export interface AuthAccount {
   officerId: string | null
   assignedRegion: string | null
 }
+
+export type WeatherIcon = 'sun' | 'partly' | 'rain' | 'cloud'
+
+export interface WeatherDay {
+  day: string
+  date: string
+  high: number
+  low: number
+  rain?: number
+  rainChance: number
+  rainMm: number
+  humidity: number
+  windSpeed: number
+  windDirection: string
+  feelsLike: number
+  description: string
+  icon: WeatherIcon
+}
+
+export interface WeatherPeriodSummary {
+  title: string
+  period: string
+  avgHigh: number
+  avgLow: number
+  totalRainMm: number
+  rainDays: number
+  dryDays: number
+  avgHumidity: number
+  avgWind: number
+  sprayOkDays: number
+  wettestDay: string
+  headline: string
+}
+
+export interface WeatherForecast {
+  location: string
+  current: {
+    temp: number
+    feelsLike: number
+    description: string
+    humidity: number
+    windSpeed: number
+    windDirection: string
+    rainChance: number
+    pressure: number
+    visibilityKm: number | null
+    icon: WeatherIcon
+  }
+  days: WeatherDay[]
+  farmingTip: string
+  weekly?: WeatherPeriodSummary
+  monthly?: WeatherPeriodSummary
+}
+
+export interface LeafPrediction {
+  label: string
+  probability: number
+}
+
+export interface StemDiagnosisDetail {
+  code: string
+  typeLabel: string
+  matchScore: number
+  matchBandLabel: string
+  differentiation: string
+  severity: string
+  severityScore: number
+  inconclusive: boolean
+  evidence: string[]
+  rankings: Array<{
+    code: string
+    name: string
+    category: string
+    matchScore: number
+  }>
+  cause: string
+  riskFactors: string[]
+  whatHappensIfWorse: string
+  whatToDoNow: string
+  prevention: string[]
+  management: string[]
+  officerReferral: boolean
+  referralPriority?: string
+  disclaimer: string
+  rbbCrossCheckRpw?: boolean
+  suggestLeafModule?: boolean
+}
+
+export interface DiagnosisResult {
+  id: string
+  category?: 'leaves' | 'stem' | 'bud' | 'fruit'
+  imageResult: string
+  symptomResult: string
+  finalResult: string
+  confidence: number
+  status: 'verified' | 'pending'
+  advice: string
+  predictions?: LeafPrediction[]
+  detectedEvidence?: string
+  matchLevel?: 'high' | 'moderate' | 'uncertain'
+  secondaryConditions?: string[]
+  officerAlert?: string
+  stemDetail?: StemDiagnosisDetail
+  budDetail?: StemDiagnosisDetail
+  fruitDetail?: StemDiagnosisDetail
+}
+
+export interface DiseaseReport {
+  id: string
+  farmId: string
+  farmName: string
+  region: string
+  imageUrl?: string
+  symptoms?: Record<string, string | boolean>
+  imageResult?: string
+  symptomResult?: string
+  finalResult?: string
+  confidence: number
+  advice?: string
+  status: 'verified' | 'pending' | 'rejected'
+  createdAt: string
+  reviewComment?: string
+}

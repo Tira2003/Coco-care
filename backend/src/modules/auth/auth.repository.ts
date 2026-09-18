@@ -1,6 +1,8 @@
-import type { PoolClient } from 'pg'
+import type { Pool, PoolClient } from 'pg'
 import { pool } from '../../db/pool.js'
 import type { AuthAccount, Farm, UserRole } from '../../types/index.js'
+
+type Db = Pool | PoolClient
 
 interface AccountRow {
   id: string
@@ -102,7 +104,7 @@ export async function findAccountById(id: string, role: UserRole): Promise<AuthA
   return row ? mapAccount(row, role) : null
 }
 
-export async function usernameExists(username: string, client: PoolClient | typeof pool = pool) {
+export async function usernameExists(username: string, client: Db = pool) {
   const result = await client.query(
     `SELECT 1 FROM (
        SELECT username FROM farmers
@@ -118,7 +120,7 @@ export async function usernameExists(username: string, client: PoolClient | type
   return (result.rowCount ?? 0) > 0
 }
 
-export async function emailExists(email: string, client: PoolClient | typeof pool = pool) {
+export async function emailExists(email: string, client: Db = pool) {
   const result = await client.query(
     `SELECT 1 FROM (
        SELECT email FROM farmers
@@ -135,7 +137,7 @@ export async function emailExists(email: string, client: PoolClient | typeof poo
 }
 
 export async function insertFarmer(
-  client: PoolClient,
+  client: Db,
   input: {
     username: string
     passwordHash: string
@@ -154,7 +156,7 @@ export async function insertFarmer(
 }
 
 export async function insertFarm(
-  client: PoolClient,
+  client: Db,
   input: {
     userId: string
     name: string
@@ -180,6 +182,59 @@ export async function insertFarm(
     ],
   )
   return mapFarm(result.rows[0]!)
+}
+
+export async function findFarmByIdForUser(farmId: string, userId: string): Promise<Farm | null> {
+  const result = await pool.query<FarmRow>(
+    `SELECT id, name, location, latitude, longitude, acreage, tree_count
+     FROM farms
+     WHERE id = $1 AND user_id = $2
+     LIMIT 1`,
+    [farmId, userId],
+  )
+  const row = result.rows[0]
+  return row ? mapFarm(row) : null
+}
+
+export async function updateFarmForUser(
+  farmId: string,
+  userId: string,
+  input: {
+    name: string
+    location: string
+    latitude: number
+    longitude: number
+    acreage: number
+    treeCount: number
+  },
+): Promise<Farm | null> {
+  const result = await pool.query<FarmRow>(
+    `UPDATE farms
+     SET name = $3, location = $4, latitude = $5, longitude = $6, acreage = $7, tree_count = $8
+     WHERE id = $1 AND user_id = $2
+     RETURNING id, name, location, latitude, longitude, acreage, tree_count`,
+    [
+      farmId,
+      userId,
+      input.name,
+      input.location,
+      input.latitude,
+      input.longitude,
+      input.acreage,
+      input.treeCount,
+    ],
+  )
+  const row = result.rows[0]
+  return row ? mapFarm(row) : null
+}
+
+export async function deleteFarmForUser(farmId: string, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    `DELETE FROM farms
+     WHERE id = $1 AND user_id = $2`,
+    [farmId, userId],
+  )
+  return (result.rowCount ?? 0) > 0
 }
 
 export async function listFarmsByUserId(userId: string): Promise<Farm[]> {
