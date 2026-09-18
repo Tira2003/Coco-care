@@ -26,7 +26,7 @@ import type { User as UserType } from '@/types'
 
 const STEP_BRAND_INFO = {
   1: {
-    eyebrow: 'Step 1 Â· About you',
+    eyebrow: 'Step 1 · About you',
     title: (
       <>
         Tell us <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">who you are.</span>
@@ -35,7 +35,7 @@ const STEP_BRAND_INFO = {
     sub: 'Your NIC and mobile let agricultural officers verify reports and reach you about your submissions.',
   },
   2: {
-    eyebrow: 'Step 2 Â· Your farm',
+    eyebrow: 'Step 2 · Your farm',
     title: (
       <>
         Where does your grove <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">grow?</span>
@@ -44,10 +44,10 @@ const STEP_BRAND_INFO = {
     sub: 'Your district powers the live outbreak heatmap and radius-based disease alerts for your area.',
   },
   3: {
-    eyebrow: 'Step 3 Â· Security',
+    eyebrow: 'Step 3 · Security',
     title: (
       <>
-        One last step â€” <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">secure your account.</span>
+        One last step - <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">secure your account.</span>
       </>
     ),
     sub: 'Pick a strong password. Your reports, farm data and alerts stay private to you and your officers.',
@@ -57,9 +57,9 @@ const STEP_BRAND_INFO = {
 const PW_LABELS = [
   'Use at least 8 characters',
   'Weak password',
-  'Fair â€” could be stronger',
+  'Fair - could be stronger',
   'Good password',
-  'Strong password ðŸ’ª',
+  'Strong password',
 ]
 
 const PW_COLORS = [
@@ -141,11 +141,11 @@ export function RegisterPage() {
       return false
     }
     if (!isNicValid) {
-      setError('Invalid NIC â€” use 9 digits + V (e.g. 901234567V) or 12 digits.')
+      setError('Invalid NIC - use 9 digits + V (e.g. 901234567V) or 12 digits.')
       return false
     }
     if (!isMobileValid) {
-      setError('Enter a valid mobile â€” 07XXXXXXXX or +947XXXXXXXX.')
+      setError('Enter a valid mobile - 07XXXXXXXX or +947XXXXXXXX.')
       return false
     }
     if (formData.email.trim() && !emailRe.test(formData.email.trim())) {
@@ -205,9 +205,9 @@ export function RegisterPage() {
       const emailTrimmed = formData.email.trim()
       const acreageBySize: Record<string, number> = {
         'Less than 1 acre': 0.5,
-        '1 – 5 acres': 3,
-        '5 – 20 acres': 12.5,
-        '20 – 50 acres': 35,
+        '1-5 acres': 3,
+        '5-20 acres': 12.5,
+        '20-50 acres': 35,
         'More than 50 acres': 60,
       }
       const acreage = acreageBySize[formData.plantationSize] ?? 1
@@ -247,9 +247,9 @@ export function RegisterPage() {
   const firstName = (formData.fullName.trim().split(/\s+/)[0]) || 'Grower'
   const nicVal = formData.nic.trim()
   const maskedNic = nicVal.length === 12
-    ? nicVal.slice(0, 4) + 'â€¢â€¢â€¢â€¢' + nicVal.slice(-4)
+    ? nicVal.slice(0, 4) + '****' + nicVal.slice(-4)
     : nicVal.length >= 9
-    ? nicVal.slice(0, 3) + 'â€¢â€¢â€¢â€¢â€¢' + nicVal.slice(-1).toUpperCase()
+    ? nicVal.slice(0, 3) + '*****' + nicVal.slice(-1).toUpperCase()
     : nicVal
 
   return (
@@ -376,7 +376,8 @@ export function RegisterPage() {
                 Welcome to Coco Care,{' '}
                 <span className="font-['Instrument_Serif',serif] italic font-normal text-[#7FA81B]">
                   {firstName}
-                </span>! ðŸŒ´
+                </span>
+                !
               </h1>
               <p className="text-[#5C6B60] text-sm max-w-sm mx-auto mb-6 leading-relaxed">
                 Your farmer workspace is ready. Run your first leaf diagnosis or explore the outbreak map anytime.
@@ -426,7 +427,7 @@ export function RegisterPage() {
                   </span>
                 </h1>
                 <p className="text-[#5C6B60] text-sm sm:text-base mt-2">
-                  Three quick steps â€” about you, your farm, and your security. Takes about a minute.
+                  Three quick steps - about you, your farm, and your security. Takes about a minute.
                 </p>
               </header>
 
@@ -707,9 +708,9 @@ export function RegisterPage() {
                           >
                             <option value="" disabled>Select plantation size</option>
                             <option value="Less than 1 acre">Less than 1 acre</option>
-                            <option value="1 â€“ 5 acres">1 â€“ 5 acres</option>
-                            <option value="5 â€“ 20 acres">5 â€“ 20 acres</option>
-                            <option value="20 â€“ 50 acres">20 â€“ 50 acres</option>
+                            <option value="1-5 acres">1-5 acres</option>
+                            <option value="5-20 acres">5-20 acres</option>
+                            <option value="20-50 acres">20-50 acres</option>
                             <option value="More than 50 acres">More than 50 acres</option>
                           </select>
                           <span className="absolute right-3.5 text-[#5C6B60] pointer-events-none">
@@ -747,7 +748,7 @@ export function RegisterPage() {
                     <div className="flex items-start gap-3 bg-[#EDF3E0] rounded-2xl p-3.5 text-xs text-[#123524] leading-relaxed">
                       <Info className="h-4 w-4 text-[#123524] shrink-0 mt-0.5" />
                       <span>
-                        Your district powers the <b>outbreak heatmap</b> and <b>radius alerts</b> â€” we&apos;ll only notify you about verified cases near your farm.
+                        Your district powers the <b>outbreak heatmap</b> and <b>radius alerts</b> - we&apos;ll only notify you about verified cases near your farm.
                       </span>
                     </div>
 
@@ -925,7 +926,7 @@ export function RegisterPage() {
                         {loading ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Creating accountâ€¦</span>
+                            <span>Creating account...</span>
                           </>
                         ) : (
                           <>

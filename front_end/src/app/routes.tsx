@@ -9,11 +9,13 @@ import { BudDiseaseDiagnosis } from './pages/BudDiseaseDiagnosis'
 import { FruitDiseaseDiagnosis } from './pages/FruitDiseaseDiagnosis'
 import { SymptomDiseaseDiagnosis } from './pages/SymptomDiseaseDiagnosis'
 import { AIChatbot } from './pages/AIChatbot'
+import { OfficerConsultations } from './pages/OfficerConsultations'
 import { DiseaseHeatmap } from './pages/DiseaseHeatmap'
 import { Notifications } from './pages/Notifications'
 import { Profile } from './pages/Profile'
 import { OfficerLayout } from './layouts/OfficerLayout'
 import { ReportReviewPage } from './pages/officer/ReportReviewPage'
+import { OfficerConsultationsPage } from './pages/officer/OfficerConsultationsPage'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
@@ -44,6 +46,7 @@ export const router = createBrowserRouter([
           { path: 'disease-detection/fruit', Component: FruitDiseaseDiagnosis },
           { path: 'disease-detection/symptoms/:category', Component: SymptomDiseaseDiagnosis },
           { path: 'chatbot', Component: AIChatbot },
+          { path: 'consultations', Component: OfficerConsultations },
           { path: 'heatmap', Component: DiseaseHeatmap },
           { path: 'notifications', Component: Notifications },
           { path: 'profile', Component: Profile },
@@ -57,7 +60,10 @@ export const router = createBrowserRouter([
       {
         path: '/officer',
         Component: OfficerLayout,
-        children: [{ path: 'reports', Component: ReportReviewPage }],
+        children: [
+          { path: 'reports', Component: ReportReviewPage },
+          { path: 'consultations', Component: OfficerConsultationsPage },
+        ],
       },
     ],
   },

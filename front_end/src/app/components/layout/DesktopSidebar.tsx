@@ -3,6 +3,7 @@ import {
   LayoutGrid,
   FileText,
   MessageSquare,
+  UserRound,
   Map,
   Settings,
   HelpCircle,
@@ -139,7 +140,7 @@ export function DesktopSidebar({
               className="w-full bg-transparent text-xs text-[#10241A] placeholder-[#5C6B60] outline-none"
             />
             <span className="shrink-0 rounded-md border border-[#E6EADF] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#5C6B60]">
-              âŒ˜S
+              {'\u2318'}S
             </span>
           </div>
         </div>
@@ -203,16 +204,23 @@ export function DesktopSidebar({
           )}
           <div className="space-y-0.5">
             <Link
-              to="/app/chatbot"
+              to="/app/consultations"
               className={`
-                flex items-center gap-3 rounded-full text-xs font-medium text-[#10241A] hover:bg-[#F1F5EA] transition-colors
+                flex items-center gap-3 rounded-full text-xs font-medium transition-colors
                 ${sidebarWide ? 'px-3.5 py-2.5' : 'justify-center p-2.5'}
+                ${
+                  locationPath.startsWith('/app/consultations')
+                    ? 'bg-[#123524] text-white shadow-xs'
+                    : 'text-[#10241A] hover:bg-[#F1F5EA]'
+                }
               `}
               title={!sidebarWide ? 'Officer consultations' : undefined}
             >
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#EDF3E0] text-[10px] font-bold text-[#123524] shrink-0">
-                ðŸ’¬
-              </div>
+              <UserRound
+                className={`h-4 w-4 shrink-0 ${
+                  locationPath.startsWith('/app/consultations') ? 'text-[#C9F169]' : 'text-[#5C6B60]'
+                }`}
+              />
               {sidebarWide && <span className="truncate">Officer consultations</span>}
             </Link>
           </div>
@@ -323,7 +331,7 @@ export function DesktopSidebar({
         >
           <div className="border-b border-[#E6EADF] p-3">
             <div className="truncate text-xs font-bold text-[#10241A]">{user?.name}</div>
-            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} Â· {user?.role}</div>
+            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} · {user?.role}</div>
             {user?.email && <div className="truncate text-[10px] text-[#5C6B60] mt-0.5">{user.email}</div>}
           </div>
           <div className="p-1 space-y-0.5">

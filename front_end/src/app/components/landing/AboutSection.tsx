@@ -16,7 +16,7 @@
           </div>
           <div>
             <p className="text-[#5C6B60] text-base leading-relaxed">
-              We blend computer-vision leaf diagnosis, guided symptom questionnaires and a RAG assistant trained on real Coconut Research Institute manuals â€” so every farmer can act on expert knowledge the moment it matters.
+              We blend computer-vision leaf diagnosis, guided symptom questionnaires and a RAG assistant trained on real Coconut Research Institute manuals - so every farmer can act on expert knowledge the moment it matters.
             </p>
           </div>
         </div>
@@ -29,7 +29,7 @@
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0C281B]/80 via-transparent to-transparent" />
           <p className="absolute left-6 sm:left-10 bottom-6 sm:bottom-8 z-10 text-white font-['Instrument_Serif',serif] italic text-xl sm:text-2xl max-w-xl">
-            &ldquo;From the first yellowing frond to a verified recovery â€” expert care for every palm.&rdquo;
+            &ldquo;From the first yellowing frond to a verified recovery - expert care for every palm.&rdquo;
           </p>
         </div>
       </div>
