@@ -1,5 +1,6 @@
 import { pool } from '../../db/pool.js'
 import type { ChatConversation, ChatMessage } from '../../types/index.js'
+import { CHAT_WELCOME_MESSAGE, isWelcomeMessage } from './chat.constants.js'
 
 interface ConversationRow {
   id: string
@@ -89,17 +90,96 @@ export async function listMessages(conversationId: string): Promise<ChatMessage[
   return result.rows.map(mapMessage)
 }
 
+export async function ensureWelcomeMessage(
+  conversationId: string,
+  userId: string,
+  createdAt: string,
+): Promise<ChatMessage[]> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      `SELECT id FROM chat_conversations WHERE id = $1 FOR UPDATE`,
+      [conversationId],
+    )
+
+    await client.query(
+      `WITH keep AS (
+         SELECT id
+         FROM chat_messages
+         WHERE conversation_id = $1
+           AND role = 'assistant'
+           AND content = $2
+         ORDER BY created_at ASC, id ASC
+         LIMIT 1
+       )
+       DELETE FROM chat_messages AS m
+       USING keep
+       WHERE m.conversation_id = $1
+         AND m.role = 'assistant'
+         AND m.content = $2
+         AND m.id <> keep.id`,
+      [conversationId, CHAT_WELCOME_MESSAGE],
+    )
+
+    const existing = await client.query<MessageRow>(
+      `SELECT id, conversation_id, role, content, created_at
+       FROM chat_messages
+       WHERE conversation_id = $1
+       ORDER BY created_at ASC`,
+      [conversationId],
+    )
+
+    if (!existing.rows.some((row) => isWelcomeMessage(row.role, row.content))) {
+      await client.query(
+        `INSERT INTO chat_messages (conversation_id, user_id, role, content, created_at)
+         SELECT $1, $2, 'assistant', $3, $4::timestamptz
+         WHERE NOT EXISTS (
+           SELECT 1
+           FROM chat_messages
+           WHERE conversation_id = $1
+             AND role = 'assistant'
+             AND content = $3
+         )`,
+        [conversationId, userId, CHAT_WELCOME_MESSAGE, createdAt],
+      )
+    }
+
+    const result = await client.query<MessageRow>(
+      `SELECT id, conversation_id, role, content, created_at
+       FROM chat_messages
+       WHERE conversation_id = $1
+       ORDER BY created_at ASC`,
+      [conversationId],
+    )
+    await client.query('COMMIT')
+    return result.rows.map(mapMessage)
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
 export async function insertMessage(input: {
   conversationId: string
   userId: string
   role: 'user' | 'assistant'
   content: string
+  createdAt?: string
 }): Promise<ChatMessage> {
   const result = await pool.query<MessageRow>(
-    `INSERT INTO chat_messages (conversation_id, user_id, role, content)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, conversation_id, role, content, created_at`,
-    [input.conversationId, input.userId, input.role, input.content],
+    input.createdAt
+      ? `INSERT INTO chat_messages (conversation_id, user_id, role, content, created_at)
+         VALUES ($1, $2, $3, $4, $5::timestamptz)
+         RETURNING id, conversation_id, role, content, created_at`
+      : `INSERT INTO chat_messages (conversation_id, user_id, role, content)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, conversation_id, role, content, created_at`,
+    input.createdAt
+      ? [input.conversationId, input.userId, input.role, input.content, input.createdAt]
+      : [input.conversationId, input.userId, input.role, input.content],
   )
   return mapMessage(result.rows[0]!)
 }

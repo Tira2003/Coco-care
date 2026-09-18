@@ -99,6 +99,7 @@ export interface DiseaseReport {
 }
 
 export type VerificationStatus = 'verified' | 'ai_suspected'
+export type ThreatLevel = 'low' | 'medium' | 'high' | 'critical'
 
 export interface HeatmapPoint {
   lat: number
@@ -106,7 +107,13 @@ export interface HeatmapPoint {
   weight: number
   diseaseType: string
   verificationStatus: VerificationStatus
+  threatLevel?: ThreatLevel
   createdAt?: string
+  reportId?: string
+  farmId?: string
+  farmName?: string
+  district?: string
+  count?: number
 }
 
 export interface DiseaseAlert {
@@ -119,6 +126,7 @@ export interface DiseaseAlert {
   message: string
   read: boolean
   createdAt: string
+  severity?: ThreatLevel
 }
 
 export interface NearbyOutbreak {
@@ -128,16 +136,28 @@ export interface NearbyOutbreak {
   weight: number
   distanceKm: number
   reportId: string
+  farmId?: string
   verificationStatus: VerificationStatus
+  threatLevel?: ThreatLevel
   createdAt: string
 }
 
 export interface NearbyResponse {
+  radiusKm?: number
   farms: Array<{
     farmId: string
     farmName: string
+    lat?: number
+    lng?: number
     outbreaks: NearbyOutbreak[]
   }>
+  nearest?: {
+    diseaseType: string
+    distanceKm: number
+    farmName: string
+    threatLevel: ThreatLevel
+    verificationStatus: VerificationStatus
+  } | null
 }
 
 export interface DiseaseMapStats {

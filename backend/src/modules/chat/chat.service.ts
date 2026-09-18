@@ -10,10 +10,10 @@ import {
 import {
   createConversation,
   deleteConversationForUser,
+  ensureWelcomeMessage,
   findConversationForUser,
   insertMessage,
   listConversations,
-  listMessages,
   touchConversation,
 } from './chat.repository.js'
 import { criGapMessage, chunksCoverQuestion, extractAnswer, selectChunksForQuestion, tokenizeQuestion, withSource } from './extractAnswer.js'
@@ -54,7 +54,9 @@ export async function getConversations(userId: string) {
 }
 
 export async function startConversation(userId: string) {
-  return createConversation(userId)
+  const conversation = await createConversation(userId)
+  await ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
+  return conversation
 }
 
 export async function removeConversation(userId: string, conversationId: string) {
@@ -65,7 +67,7 @@ export async function removeConversation(userId: string, conversationId: string)
 export async function getMessages(userId: string, conversationId: string) {
   const conversation = await findConversationForUser(conversationId, userId)
   if (!conversation) throw notFound('Conversation not found')
-  return listMessages(conversationId)
+  return ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
 }
 
 export async function sendMessage(
@@ -74,6 +76,8 @@ export async function sendMessage(
 ): Promise<ChatMessage> {
   const conversation = await findConversationForUser(input.conversationId, userId)
   if (!conversation) throw notFound('Conversation not found')
+
+  await ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
 
   await insertMessage({
     conversationId: conversation.id,

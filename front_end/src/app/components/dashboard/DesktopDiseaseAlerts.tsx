@@ -1,10 +1,10 @@
 import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
-import type { DiseaseAlert, DiseaseHeatmapPoint } from '@/types'
+import type { DiseaseAlert, HeatmapPoint } from '@/types'
 
 interface DesktopDiseaseAlertsProps {
   diseaseAlerts: DiseaseAlert[]
-  heatmap: DiseaseHeatmapPoint[]
+  heatmap: HeatmapPoint[]
   unreadAlertCount: number
 }
 

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/contexts/AuthContext'
 import { chatApi, knowledgeApi } from '@/api/services'
 import type { ChatMessage, ChatConversation, KnowledgeArticle } from '@/types'
 import {
@@ -30,6 +29,31 @@ const UUID_RE =
 
 function isConversationId(value: string | null): value is string {
   return Boolean(value && UUID_RE.test(value))
+}
+
+const WELCOME_MESSAGE =
+  'Hello! I am Coco AI. Ask me anything about coconut farming, diseases, or fertilizer.'
+
+function isWelcomeMessage(message: ChatMessage) {
+  return message.role === 'assistant' && message.content.trim() === WELCOME_MESSAGE
+}
+
+function withWelcome(
+  messages: ChatMessage[],
+  conversationId: string | null,
+  createdAt: string,
+): ChatMessage[] {
+  if (messages.some(isWelcomeMessage)) return messages
+  return [
+    {
+      id: conversationId ? `welcome-${conversationId}` : 'welcome-local',
+      conversationId: conversationId ?? '',
+      role: 'assistant',
+      content: WELCOME_MESSAGE,
+      createdAt,
+    },
+    ...messages,
+  ]
 }
 
 /** Keep in sync with backend/data/rag-suggested-questions.json */
@@ -111,8 +135,6 @@ function MessageContent({
 
 export function AIChatbot() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
-  const firstName = (user?.name ?? 'Sunil').split(' ')[0]
   const [activeId, setActiveId] = useState<string | null>(() => {
     const stored = localStorage.getItem(ACTIVE_CHAT_KEY)
     return isConversationId(stored) ? stored : null
@@ -144,6 +166,10 @@ export function AIChatbot() {
   })
 
   const userMessageCount = messages.filter((m) => m.role === 'user').length
+  const [welcomeClock] = useState(() => new Date().toISOString())
+  const welcomeCreatedAt =
+    conversations.find((c) => c.id === activeId)?.createdAt ?? welcomeClock
+  const displayedMessages = withWelcome(messages, activeId, welcomeCreatedAt)
 
   /** Drop drafts with no user messages when leaving them. Never delete the active draft. */
   const discardEmptyDraft = async (conversationId: string) => {
@@ -312,7 +338,8 @@ export function AIChatbot() {
           const list = old ?? []
           return [newConv, ...list.filter((c) => c.id !== newConv.id)]
         })
-        queryClient.setQueryData(['chat', 'messages', newConv.id], [])
+        const msgs = await chatApi.getMessages(newConv.id)
+        queryClient.setQueryData(['chat', 'messages', newConv.id], msgs)
         targetId = newConv.id
         openConversation(newConv.id)
       } catch {
@@ -373,7 +400,7 @@ export function AIChatbot() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
     mobileScrollRef.current?.scrollTo({ top: mobileScrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length, sendMutation.isPending])
+  }, [displayedMessages.length, sendMutation.isPending])
 
   const conversationList = (
     <div className="flex h-full flex-col bg-[#FBFCF9]">
@@ -517,47 +544,8 @@ export function AIChatbot() {
             </span>
           </div>
 
-          {/* Initial state with welcome message & chips if no user messages yet */}
-          {userMessageCount === 0 && (
-            <>
-              <div className="flex gap-2 items-end max-w-[85%]">
-                <div className="w-6 h-6 rounded-full bg-[#123524] text-[#C9F169] flex items-center justify-center shrink-0 mb-0.5 shadow-2xs">
-                  <Leaf className="w-3 h-3" />
-                </div>
-                <div className="bg-white border border-[#E4E8DC] rounded-[18px] rounded-bl-[6px] p-3 text-[13px] leading-relaxed text-[#2E4A2E] shadow-[0_1px_2px_rgba(16,36,26,0.05)]">
-                  Ayubowan {firstName}! 🌴 I'm CocoBot, your coconut farming assistant. Ask me anything about your trees.
-                </div>
-              </div>
-
-              {/* Quick suggestion chips */}
-              <div className="flex flex-wrap gap-2 pl-8 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => void sendMessage('Why are leaves turning yellow?')}
-                  className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
-                >
-                  Why are leaves turning yellow?
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void sendMessage('Best fertilizer schedule')}
-                  className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
-                >
-                  Fertilizer schedule
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void sendMessage('Rain expected this week?')}
-                  className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
-                >
-                  Rain this week?
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Actual messages */}
-          {messages.map((message) => {
+          {/* Greeting is stored as the first assistant message and stays in the thread. */}
+          {displayedMessages.map((message) => {
             const isUser = message.role === 'user'
             if (isUser) {
               return (
@@ -583,6 +571,32 @@ export function AIChatbot() {
               </div>
             )
           })}
+
+          {userMessageCount === 0 && (
+            <div className="flex flex-wrap gap-2 pl-8 pt-0.5">
+              <button
+                type="button"
+                onClick={() => void sendMessage('Why are leaves turning yellow?')}
+                className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
+              >
+                Why are leaves turning yellow?
+              </button>
+              <button
+                type="button"
+                onClick={() => void sendMessage('Best fertilizer schedule')}
+                className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
+              >
+                Fertilizer schedule
+              </button>
+              <button
+                type="button"
+                onClick={() => void sendMessage('Rain expected this week?')}
+                className="text-[12px] font-semibold bg-white border border-[rgba(201,241,105,0.8)] text-[#2E5A0D] rounded-full px-3 py-1.5 active:scale-95 transition-transform shadow-xs"
+              >
+                Rain this week?
+              </button>
+            </div>
+          )}
 
           {/* Typing bounce animation */}
           {sendMutation.isPending && (
@@ -702,65 +716,54 @@ export function AIChatbot() {
             <div className="my-auto flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
             </div>
-          ) : userMessageCount === 0 ? (
-            /* Empty State matching dashboard.html */
-            <div className="my-auto flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#EDF3E0] text-2xl shadow-xs">
-                🤖
-              </div>
-              <h2 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold text-[#10241A]">
-                Ask Coco Care
-              </h2>
-              <p className="mt-1 max-w-sm text-xs text-[#5C6B60] leading-relaxed">
-                Every answer comes strictly from official Coconut Research Institute (CRI) advisory circulars — with source documents cited.
-              </p>
-
-              {/* Suggestion questions */}
-              <div className="mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
-                {suggestedQuestions.map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    disabled={sendMutation.isPending}
-                    onClick={() => void sendMessage(q)}
-                    className="rounded-full border border-[#E6EADF] bg-white px-3.5 py-1.5 text-xs font-medium text-[#10241A] transition-colors hover:border-[#7FA81B] hover:bg-[#EDF3E0] hover:text-[#123524] disabled:opacity-50"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
           ) : (
-            messages.map((message) => {
-              const isUser = message.role === 'user'
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-                >
+            <>
+              {displayedMessages.map((message) => {
+                const isUser = message.role === 'user'
+                return (
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-[18px] px-4 py-3 text-xs sm:text-sm leading-relaxed ${
-                      isUser
-                        ? 'bg-[#123524] text-white rounded-br-[4px]'
-                        : 'bg-[#F6F7F2] border border-[#E6EADF] text-[#10241A] rounded-bl-[4px]'
-                    }`}
+                    key={message.id}
+                    className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                   >
-                    <MessageContent
-                      content={message.content}
-                      role={message.role}
-                      onOpenSource={openSourceArticle}
-                    />
                     <div
-                      className={`mt-1.5 text-[10px] ${
-                        isUser ? 'text-[#AEC0A6]' : 'text-[#5C6B60]'
+                      className={`max-w-[85%] sm:max-w-[75%] rounded-[18px] px-4 py-3 text-xs sm:text-sm leading-relaxed ${
+                        isUser
+                          ? 'bg-[#123524] text-white rounded-br-[4px]'
+                          : 'bg-[#F6F7F2] border border-[#E6EADF] text-[#10241A] rounded-bl-[4px]'
                       }`}
                     >
-                      {formatTime(message.createdAt)}
+                      <MessageContent
+                        content={message.content}
+                        role={message.role}
+                        onOpenSource={openSourceArticle}
+                      />
+                      <div
+                        className={`mt-1.5 text-[10px] ${
+                          isUser ? 'text-[#AEC0A6]' : 'text-[#5C6B60]'
+                        }`}
+                      >
+                        {formatTime(message.createdAt)}
+                      </div>
                     </div>
                   </div>
+                )
+              })}
+              {userMessageCount === 0 ? (
+                <div className="flex max-w-2xl flex-wrap gap-2 pt-1">
+                  {suggestedQuestions.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      disabled={sendMutation.isPending}
+                      onClick={() => void sendMessage(q)}
+                      className="rounded-full border border-[#E6EADF] bg-white px-3.5 py-1.5 text-xs font-medium text-[#10241A] transition-colors hover:border-[#7FA81B] hover:bg-[#EDF3E0] hover:text-[#123524] disabled:opacity-50"
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
-              )
-            })
+              ) : null}
+            </>
           )}
 
           {/* Typing Indicator */}
