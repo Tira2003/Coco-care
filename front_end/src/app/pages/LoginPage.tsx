@@ -220,7 +220,7 @@ export function LoginPage() {
                   id="loginNic"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.toUpperCase().replace(/\s/g, ''))}
+                  onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
                   placeholder="e.g. 199012345678"
                   autoComplete="username"
                   maxLength={12}
