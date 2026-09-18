@@ -7,14 +7,13 @@ import {
   searchChunksByKeywords,
   type RetrievedChunk,
 } from '../knowledge/knowledge.repository.js'
-import { CHAT_WELCOME_MESSAGE, isWelcomeMessage } from './chat.constants.js'
 import {
   createConversation,
   deleteConversationForUser,
+  ensureWelcomeMessage,
   findConversationForUser,
   insertMessage,
   listConversations,
-  listMessages,
   touchConversation,
 } from './chat.repository.js'
 import { criGapMessage, chunksCoverQuestion, extractAnswer, selectChunksForQuestion, tokenizeQuestion, withSource } from './extractAnswer.js'
@@ -52,26 +51,6 @@ async function retrieveChunks(question: string): Promise<RetrievedChunk[]> {
 
 export async function getConversations(userId: string) {
   return listConversations(userId)
-}
-
-async function ensureWelcomeMessage(
-  conversationId: string,
-  userId: string,
-  createdAt: string,
-) {
-  const messages = await listMessages(conversationId)
-  if (messages.some((message) => isWelcomeMessage(message.role, message.content))) {
-    return messages
-  }
-
-  await insertMessage({
-    conversationId,
-    userId,
-    role: 'assistant',
-    content: CHAT_WELCOME_MESSAGE,
-    createdAt,
-  })
-  return listMessages(conversationId)
 }
 
 export async function startConversation(userId: string) {
