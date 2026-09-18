@@ -1,21 +1,9 @@
 import { createApp } from './app.js'
 import { env } from './config/env.js'
-import { warmupGeminiEmbedding } from './services/geminiEmbedding.service.js'
 
 async function main() {
-  if (env.geminiEmbeddingEnabled) {
-    if (!env.geminiApiKey) {
-      console.error(
-        'GEMINI_API_KEY is required when GEMINI_EMBEDDING_ENABLED=true. Add it to backend/.env and restart.',
-      )
-      process.exit(1)
-    }
-    try {
-      await warmupGeminiEmbedding()
-    } catch (err) {
-      // Don't block the whole API (auth, diagnosis, Azure, etc.) if embeddings are down.
-      console.error('Failed to warm up Gemini embeddings (RAG chat may fail):', err)
-    }
+  if (!env.databaseUrl) {
+    throw new Error('DATABASE_URL is required. Add it to backend/.env')
   }
 
   const app = createApp()

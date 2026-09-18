@@ -204,6 +204,15 @@ export function RegisterPage() {
     setLoading(true)
     try {
       const emailTrimmed = formData.email.trim()
+      const acreageBySize: Record<string, number> = {
+        'Less than 1 acre': 0.5,
+        '1 – 5 acres': 3,
+        '5 – 20 acres': 12.5,
+        '20 – 50 acres': 35,
+        'More than 50 acres': 60,
+      }
+      const acreage = acreageBySize[formData.plantationSize] ?? 1
+      const farmName = formData.farmName.trim() || `${formData.fullName.trim()}'s Farm`
       const user = await register({
         role: 'farmer',
         username: formData.nic.trim(),
@@ -211,6 +220,16 @@ export function RegisterPage() {
         phone: formData.mobile.trim(),
         assignedRegion: formData.district.trim(),
         password: formData.password,
+        farms: [
+          {
+            name: farmName,
+            location: formData.district.trim(),
+            latitude: 0,
+            longitude: 0,
+            acreage,
+            treeCount: Math.round(acreage * 64),
+          },
+        ],
         ...(emailTrimmed ? { email: emailTrimmed } : {}),
       })
       setCreatedUser(user)
