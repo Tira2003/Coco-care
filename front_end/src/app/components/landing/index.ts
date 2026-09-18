@@ -1,5 +1,7 @@
-export { LandingHeader } from './LandingHeader'
+﻿export { LandingHeader } from './LandingHeader'
 export { HeroSection } from './HeroSection'
+export { HeroSection2 } from './HeroSection2'
+export { WhySection } from './WhySection'
 export { StatsSection } from './StatsSection'
 export { AboutSection } from './AboutSection'
 export { FeaturesSection } from './FeaturesSection'

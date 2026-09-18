@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowRight, Menu, X, Palmtree } from 'lucide-react'
+import { ArrowRight, Menu, X } from 'lucide-react'
 
 export function LandingHeader() {
   const [scrolled, setScrolled] = useState(false)
@@ -18,10 +18,7 @@ export function LandingHeader() {
   const navLinks = [
     { label: 'Features', href: '#features' },
     { label: 'How it works', href: '#how' },
-    { label: 'Disease Map', href: '#map' },
     { label: 'Roles', href: '#roles' },
-    { label: 'Insights', href: '#insights' },
-    { label: 'FAQ', href: '#faq' },
   ]
 
   return (
@@ -35,7 +32,7 @@ export function LandingHeader() {
       <div className="max-w-[1200px] mx-auto px-6 h-[74px] flex items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5 font-['Bricolage_Grotesque',sans-serif] font-bold text-xl text-[#10241A] group">
           <span className="w-9 h-9 rounded-xl bg-[#123524] flex items-center justify-center text-[#C9F169] shadow-sm transition-transform group-hover:scale-105">
-            <Palmtree className="h-5 w-5 text-[#C9F169]" />
+            <img src="/new logo.svg" alt="Coco Care logo" className="h-5 w-5 object-contain" />
           </span>
           <span>Coco Care</span>
         </a>

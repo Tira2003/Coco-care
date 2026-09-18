@@ -7,7 +7,6 @@ import {
   Loader2,
   ArrowRight,
   Check,
-  Palmtree,
   IdCard,
   Lock,
   LockKeyhole,
@@ -27,7 +26,7 @@ import type { User as UserType } from '@/types'
 
 const STEP_BRAND_INFO = {
   1: {
-    eyebrow: 'Step 1 · About you',
+    eyebrow: 'Step 1 Â· About you',
     title: (
       <>
         Tell us <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">who you are.</span>
@@ -36,7 +35,7 @@ const STEP_BRAND_INFO = {
     sub: 'Your NIC and mobile let agricultural officers verify reports and reach you about your submissions.',
   },
   2: {
-    eyebrow: 'Step 2 · Your farm',
+    eyebrow: 'Step 2 Â· Your farm',
     title: (
       <>
         Where does your grove <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">grow?</span>
@@ -45,10 +44,10 @@ const STEP_BRAND_INFO = {
     sub: 'Your district powers the live outbreak heatmap and radius-based disease alerts for your area.',
   },
   3: {
-    eyebrow: 'Step 3 · Security',
+    eyebrow: 'Step 3 Â· Security',
     title: (
       <>
-        One last step — <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">secure your account.</span>
+        One last step â€” <span className="font-['Instrument_Serif',serif] italic font-normal text-[#C9F169]">secure your account.</span>
       </>
     ),
     sub: 'Pick a strong password. Your reports, farm data and alerts stay private to you and your officers.',
@@ -58,9 +57,9 @@ const STEP_BRAND_INFO = {
 const PW_LABELS = [
   'Use at least 8 characters',
   'Weak password',
-  'Fair — could be stronger',
+  'Fair â€” could be stronger',
   'Good password',
-  'Strong password 💪',
+  'Strong password ðŸ’ª',
 ]
 
 const PW_COLORS = [
@@ -142,11 +141,11 @@ export function RegisterPage() {
       return false
     }
     if (!isNicValid) {
-      setError('Invalid NIC — use 9 digits + V (e.g. 901234567V) or 12 digits.')
+      setError('Invalid NIC â€” use 9 digits + V (e.g. 901234567V) or 12 digits.')
       return false
     }
     if (!isMobileValid) {
-      setError('Enter a valid mobile — 07XXXXXXXX or +947XXXXXXXX.')
+      setError('Enter a valid mobile â€” 07XXXXXXXX or +947XXXXXXXX.')
       return false
     }
     if (formData.email.trim() && !emailRe.test(formData.email.trim())) {
@@ -229,9 +228,9 @@ export function RegisterPage() {
   const firstName = (formData.fullName.trim().split(/\s+/)[0]) || 'Grower'
   const nicVal = formData.nic.trim()
   const maskedNic = nicVal.length === 12
-    ? nicVal.slice(0, 4) + '••••' + nicVal.slice(-4)
+    ? nicVal.slice(0, 4) + 'â€¢â€¢â€¢â€¢' + nicVal.slice(-4)
     : nicVal.length >= 9
-    ? nicVal.slice(0, 3) + '•••••' + nicVal.slice(-1).toUpperCase()
+    ? nicVal.slice(0, 3) + 'â€¢â€¢â€¢â€¢â€¢' + nicVal.slice(-1).toUpperCase()
     : nicVal
 
   return (
@@ -251,8 +250,8 @@ export function RegisterPage() {
           {/* Header Logo */}
           <div className="relative z-10 flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3 group">
-              <span className="w-11 h-11 rounded-2xl bg-[#C9F169]/15 border border-[#C9F169]/30 flex items-center justify-center text-[#C9F169] transition-transform group-hover:scale-105">
-                <Palmtree className="h-6 w-6 text-[#C9F169]" />
+              <span className="w-11 h-11 rounded-2xl bg-[#123524] border border-white/15 flex items-center justify-center p-2 transition-transform group-hover:scale-105">
+                <img src="/new logo.svg" alt="Coco Care logo" className="h-6 w-6 object-contain" />
               </span>
               <span className="font-['Bricolage_Grotesque',sans-serif] font-bold text-xl text-white">
                 Coco<b className="text-[#C9F169]">Care</b>
@@ -307,8 +306,8 @@ export function RegisterPage() {
           {/* Mobile Brand Link */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
             <Link to="/" className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-[#123524] flex items-center justify-center text-[#C9F169]">
-                <Palmtree className="h-5 w-5 text-[#C9F169]" />
+              <span className="w-9 h-9 rounded-xl bg-[#123524] flex items-center justify-center p-1.5 text-[#C9F169]">
+                <img src="/new logo.svg" alt="Coco Care logo" className="h-5 w-5 object-contain" />
               </span>
               <span className="font-['Bricolage_Grotesque',sans-serif] font-bold text-lg text-[#10241A]">
                 Coco<b className="text-[#7FA81B]">Care</b>
@@ -358,7 +357,7 @@ export function RegisterPage() {
                 Welcome to Coco Care,{' '}
                 <span className="font-['Instrument_Serif',serif] italic font-normal text-[#7FA81B]">
                   {firstName}
-                </span>! 🌴
+                </span>! ðŸŒ´
               </h1>
               <p className="text-[#5C6B60] text-sm max-w-sm mx-auto mb-6 leading-relaxed">
                 Your farmer workspace is ready. Run your first leaf diagnosis or explore the outbreak map anytime.
@@ -408,7 +407,7 @@ export function RegisterPage() {
                   </span>
                 </h1>
                 <p className="text-[#5C6B60] text-sm sm:text-base mt-2">
-                  Three quick steps — about you, your farm, and your security. Takes about a minute.
+                  Three quick steps â€” about you, your farm, and your security. Takes about a minute.
                 </p>
               </header>
 
@@ -689,9 +688,9 @@ export function RegisterPage() {
                           >
                             <option value="" disabled>Select plantation size</option>
                             <option value="Less than 1 acre">Less than 1 acre</option>
-                            <option value="1 – 5 acres">1 – 5 acres</option>
-                            <option value="5 – 20 acres">5 – 20 acres</option>
-                            <option value="20 – 50 acres">20 – 50 acres</option>
+                            <option value="1 â€“ 5 acres">1 â€“ 5 acres</option>
+                            <option value="5 â€“ 20 acres">5 â€“ 20 acres</option>
+                            <option value="20 â€“ 50 acres">20 â€“ 50 acres</option>
                             <option value="More than 50 acres">More than 50 acres</option>
                           </select>
                           <span className="absolute right-3.5 text-[#5C6B60] pointer-events-none">
@@ -712,7 +711,7 @@ export function RegisterPage() {
                       </label>
                       <div className="relative flex items-center">
                         <span className="absolute left-3.5 text-[#5C6B60] pointer-events-none">
-                          <Palmtree className="h-4 w-4 text-[#5C6B60]" />
+                          <Trees className="h-4 w-4 text-[#5C6B60]" />
                         </span>
                         <input
                           id="suFarm"
@@ -729,7 +728,7 @@ export function RegisterPage() {
                     <div className="flex items-start gap-3 bg-[#EDF3E0] rounded-2xl p-3.5 text-xs text-[#123524] leading-relaxed">
                       <Info className="h-4 w-4 text-[#123524] shrink-0 mt-0.5" />
                       <span>
-                        Your district powers the <b>outbreak heatmap</b> and <b>radius alerts</b> — we&apos;ll only notify you about verified cases near your farm.
+                        Your district powers the <b>outbreak heatmap</b> and <b>radius alerts</b> â€” we&apos;ll only notify you about verified cases near your farm.
                       </span>
                     </div>
 
@@ -907,7 +906,7 @@ export function RegisterPage() {
                         {loading ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Creating account…</span>
+                            <span>Creating accountâ€¦</span>
                           </>
                         ) : (
                           <>
@@ -949,3 +948,4 @@ export function RegisterPage() {
     </div>
   )
 }
+

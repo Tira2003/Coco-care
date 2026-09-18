@@ -7,7 +7,6 @@ import {
   Loader2,
   ArrowRight,
   Check,
-  Palmtree,
   IdCard,
   Lock,
   AlertCircle,
@@ -146,8 +145,8 @@ export function LoginPage() {
           {/* Header Logo */}
           <div className="relative z-10 flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3 group">
-              <span className="w-11 h-11 rounded-2xl bg-[#C9F169]/15 border border-[#C9F169]/30 flex items-center justify-center text-[#C9F169] transition-transform group-hover:scale-105">
-                <Palmtree className="h-6 w-6 text-[#C9F169]" />
+              <span className="w-11 h-11 rounded-2xl bg-[#123524] border border-white/15 flex items-center justify-center p-2 transition-transform group-hover:scale-105">
+                <img src="/new logo.svg" alt="Coco Care logo" className="h-6 w-6 object-contain" />
               </span>
               <span className="font-['Bricolage_Grotesque',sans-serif] font-bold text-xl text-white">
                 Coco<b className="text-[#C9F169]">Care</b>
@@ -179,8 +178,8 @@ export function LoginPage() {
           {/* Mobile Brand Link */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
             <Link to="/" className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-[#123524] flex items-center justify-center text-[#C9F169]">
-                <Palmtree className="h-5 w-5 text-[#C9F169]" />
+              <span className="w-9 h-9 rounded-xl bg-[#123524] flex items-center justify-center p-1.5 text-[#C9F169]">
+                <img src="/new logo.svg" alt="Coco Care logo" className="h-5 w-5 object-contain" />
               </span>
               <span className="font-['Bricolage_Grotesque',sans-serif] font-bold text-lg text-[#10241A]">
                 Coco<b className="text-[#7FA81B]">Care</b>
@@ -196,7 +195,7 @@ export function LoginPage() {
               </span>
             </h1>
             <p className="text-[#5C6B60] text-sm sm:text-base mt-2">
-              Log in to your plantation workspace — your grove has been waiting.
+              Log in to your plantation workspace â€” your grove has been waiting.
             </p>
           </header>
 
@@ -305,7 +304,7 @@ export function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Logging in…</span>
+                  <span>Logging inâ€¦</span>
                 </>
               ) : (
                 <>
@@ -418,7 +417,7 @@ export function LoginPage() {
               disabled={resetLoading}
               className="px-5 py-2 rounded-full text-sm font-semibold bg-[#123524] text-white hover:bg-[#0C281B] disabled:opacity-60 transition-colors"
             >
-              {resetLoading ? 'Saving…' : 'Change Password'}
+              {resetLoading ? 'Savingâ€¦' : 'Change Password'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -426,3 +425,4 @@ export function LoginPage() {
     </div>
   )
 }
+

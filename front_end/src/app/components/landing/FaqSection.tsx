@@ -34,7 +34,7 @@ export function FaqSection() {
   ]
 
   return (
-    <section className="py-20 sm:py-24 border-t border-[#E4E8DC]" id="faq">
+    <section className="py-32 sm:py-40 border-t border-[#E4E8DC]" id="faq">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 items-start">
           <div>
