@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { farmApi, reportsApi, diseaseMapApi, weatherApi } from '@/api/services'
@@ -15,14 +16,52 @@ import {
   DesktopWeatherForecast,
 } from '../components/dashboard'
 
+const SELECTED_FARM_KEY = 'coco_selected_farm'
+
 export function Dashboard() {
   const { user } = useAuth()
   const greeting = getTimeBasedGreeting()
+  const [selectedFarmId, setSelectedFarmId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(SELECTED_FARM_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
 
   const { data: profile } = useQuery({
     queryKey: ['farmer', 'profile'],
     queryFn: farmApi.profile,
   })
+
+  const farms = profile?.farms ?? []
+  const selectedFarm =
+    farms.find((farm) => farm.id === selectedFarmId) ?? farms[0]
+  const farmRegion = selectedFarm?.location ?? 'Kurunegala'
+  const totalFarmsCount = farms.length
+
+  useEffect(() => {
+    if (!farms.length) return
+    const exists = farms.some((farm) => farm.id === selectedFarmId)
+    if (!exists) {
+      const nextId = farms[0]?.id ?? ''
+      setSelectedFarmId(nextId)
+      try {
+        if (nextId) localStorage.setItem(SELECTED_FARM_KEY, nextId)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [farms, selectedFarmId])
+
+  const handleSelectFarm = (farmId: string) => {
+    setSelectedFarmId(farmId)
+    try {
+      localStorage.setItem(SELECTED_FARM_KEY, farmId)
+    } catch {
+      /* ignore */
+    }
+  }
 
   const { data: reports = [] } = useQuery({
     queryKey: ['reports', 'my'],
@@ -41,25 +80,22 @@ export function Dashboard() {
 
   const unreadAlertCount = diseaseAlerts.filter((a) => !a.read).length
 
-  const farm = profile?.farms[0]
-  const farmRegion = farm?.location ?? 'Kurunegala'
-  const totalFarmsCount = profile?.farms?.length ?? 1
-
   const {
     data: weather,
     isLoading: weatherLoading,
     isError: weatherError,
     error: weatherQueryError,
   } = useQuery({
-    queryKey: ['weather', 'forecast', farm?.latitude, farm?.longitude, farmRegion],
+    queryKey: ['weather', 'forecast', selectedFarm?.id],
     queryFn: () =>
       weatherApi.forecast({
-        lat: farm?.latitude,
-        lon: farm?.longitude,
-        location: farmRegion,
+        farmId: selectedFarm?.id,
+        lat: selectedFarm?.latitude,
+        lon: selectedFarm?.longitude,
+        location: selectedFarm?.location,
       }),
-    enabled: !!profile,
-    staleTime: 1000 * 60 * 30,
+    enabled: Boolean(selectedFarm),
+    staleTime: 1000 * 60 * 20,
     retry: 1,
   })
 
@@ -70,7 +106,6 @@ export function Dashboard() {
 
   const firstName = (user?.name ?? 'Farmer').split(' ')[0]
 
-  // Calculated plantation analytics
   const totalTreesRegistered = profile?.farms?.reduce((acc, f) => acc + (f.treeCount || 0), 0) || 1374
   const pendingReportsCount = reports.filter((r) => r.status === 'pending').length
   const verifiedReportsCount = reports.filter((r) => r.status === 'verified').length
@@ -89,7 +124,11 @@ export function Dashboard() {
   const atRiskPercent = Math.min(100, Math.round((atRiskPalms / totalPalms) * 100))
 
   const upcomingRainDay = weather?.days?.find((d) => (d.rainChance ?? d.rain ?? 0) >= 40)
-  const rainText = upcomingRainDay ? `in ${upcomingRainDay.day}` : 'in 2 days'
+  const rainText = upcomingRainDay
+    ? upcomingRainDay.day === 'Today'
+      ? 'today'
+      : `in ${upcomingRainDay.day}`
+    : 'low today'
   const isRiskHigh = diseaseAlerts.some((a) => a.severity === 'high' || !a.read)
   const riskLabel = isRiskHigh ? 'Moderate' : 'Low today'
   const riskColor = isRiskHigh ? 'text-[#8A5A00]' : 'text-[#1E7A44]'
@@ -102,11 +141,7 @@ export function Dashboard() {
 
   return (
     <div>
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* MOBILE NATIVE APP VIEW (Optimized for small screens)        */}
-      {/* ═══════════════════════════════════════════════════════════ */}
       <div className="lg:hidden space-y-4 pb-8">
-        {/* 1. Greeting & Date */}
         <div className="space-y-1">
           <div className="text-[12px] font-bold text-[#8A9A8E] tracking-wider uppercase">
             {currentDateStr}
@@ -119,25 +154,23 @@ export function Dashboard() {
           </p>
         </div>
 
-        {/* 2. Hero Weather Card */}
-        <MobileWeatherHero farmName={farm?.name ?? 'Green Valley Farm'} weather={weather} />
+        <MobileWeatherHero
+          farms={farms}
+          selectedFarmId={selectedFarm?.id}
+          onSelectFarm={handleSelectFarm}
+          weather={weather}
+          loading={weatherLoading}
+        />
 
-        {/* 3. Twin Stat Cards */}
         <MobileTwinStats healthScore={healthScore} unreadAlertCount={unreadAlertCount} />
 
-        {/* 4. Quick Actions */}
         <MobileQuickActions />
 
-        {/* 5. Recent Detections */}
         <MobileRecentDetections reports={reports} />
 
-        {/* 6. Tip of the Day */}
         <MobileTipOfDay />
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* DESKTOP DASHBOARD VIEW (Desktop responsive grid)            */}
-      {/* ═══════════════════════════════════════════════════════════ */}
       <div className="hidden lg:block space-y-6">
         <div>
           <h1 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold tracking-tight text-[#10241A] sm:text-2xl lg:text-3xl">
@@ -148,7 +181,6 @@ export function Dashboard() {
           </p>
         </div>
 
-        {/* Top 3 Stat Cards */}
         <DesktopStatsCards
           healthScore={healthScore}
           healthyPercent={healthyPercent}
@@ -161,19 +193,17 @@ export function Dashboard() {
           verifiedReportsCount={verifiedReportsCount}
           pendingReportsCount={pendingReportsCount}
           recoveredCount={recoveredCount}
-          weatherLocation={weather?.location ?? farmRegion}
-          currentTemp={weather?.current?.temp ?? 29}
-          weatherDescription={weather?.current?.description ?? 'partly cloudy'}
-          weatherHumidity={weather?.current?.humidity ?? 78}
+          weatherLocation={weather?.location ?? selectedFarm?.name ?? farmRegion}
+          currentTemp={weather?.current?.temp ?? 0}
+          weatherDescription={weather?.current?.description ?? (weatherLoading ? 'Loading forecast' : 'unavailable')}
+          weatherHumidity={weather?.current?.humidity ?? 0}
           rainText={rainText}
           riskLabel={riskLabel}
           riskColor={riskColor}
         />
 
-        {/* Quick Action Tiles */}
         <DesktopQuickActions totalFarmsCount={totalFarmsCount} />
 
-        {/* Recent Diagnoses + Disease Alerts */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
           <DesktopRecentDiagnoses reports={reports} />
           <DesktopDiseaseAlerts
@@ -183,10 +213,12 @@ export function Dashboard() {
           />
         </div>
 
-        {/* Weather Forecast & Microclimate Outlook */}
         <DesktopWeatherForecast
           weather={weather}
           farmRegion={farmRegion}
+          farms={farms}
+          selectedFarmId={selectedFarm?.id}
+          onSelectFarm={handleSelectFarm}
           weatherLoading={weatherLoading}
           weatherError={weatherError}
           weatherErrorMessage={weatherErrorMessage}

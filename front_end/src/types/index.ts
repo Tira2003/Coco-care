@@ -274,6 +274,21 @@ export interface WeatherDay {
   icon: WeatherIcon
 }
 
+export interface WeatherPeriodSummary {
+  title: string
+  period: string
+  avgHigh: number
+  avgLow: number
+  totalRainMm: number
+  rainDays: number
+  dryDays: number
+  avgHumidity: number
+  avgWind: number
+  sprayOkDays: number
+  wettestDay: string
+  headline: string
+}
+
 export interface WeatherForecast {
   location: string
   current: {
@@ -290,4 +305,6 @@ export interface WeatherForecast {
   }
   days: WeatherDay[]
   farmingTip: string
+  weekly?: WeatherPeriodSummary
+  monthly?: WeatherPeriodSummary
 }
