@@ -104,15 +104,9 @@ After switching embedding models, re-ingest: `npm run rag:clear && npm run rag:i
 
 ## Auth
 
-Seed users (password for all: `password`):
+There are no seed logins. Create a farmer account at `/register`, then sign in at `/login` with that NIC and password.
 
-| Username | Role |
-|----------|------|
-| `akeel` | farmer |
-| `officer1` | officer |
-| `admin` | admin |
-
-Login returns a real JWT: `Authorization: Bearer <token>`.
+Login returns a JWT: `Authorization: Bearer <token>`.
 
 ## API modules
 
