@@ -109,7 +109,7 @@ export function RegisterPage() {
     const { name, value } = e.target
     setTouched((prev) => ({ ...prev, [name]: true }))
     if (name === 'nic') {
-      setFormData((prev) => ({ ...prev, nic: value.toUpperCase().replace(/\s/g, '') }))
+      setFormData((prev) => ({ ...prev, nic: value.replace(/\s/g, '') }))
     } else if (name === 'mobile') {
       setFormData((prev) => ({ ...prev, mobile: value.replace(/[^\d+ ]/g, '') }))
     } else {
