@@ -66,16 +66,38 @@ export function formatDate(iso: string) {
 export function WeatherIconDisplay({ icon, className }: { icon: WeatherIcon; className?: string }) {
   const cls = className ?? 'w-7 h-7'
   if (icon === 'sun') return <Sun className={`${cls} text-[#F5A524]`} />
-  if (icon === 'rain') return <CloudRain className={`${cls} text-[#3B82F6]`} />
-  if (icon === 'cloud') return <Cloud className={`${cls} text-gray-400`} />
-  return <CloudSun className={`${cls} text-[#60A5FA]`} />
+  if (icon === 'rain') return <CloudRain className={`${cls} text-[#2F80ED]`} />
+  if (icon === 'cloud') return <Cloud className={`${cls} text-[#7B8FA3]`} />
+  return <CloudSun className={`${cls} text-[#4EA8DE]`} />
 }
 
 export function getWeatherRisk(day: WeatherDay) {
   const rain = day.rainChance ?? day.rain ?? 0
-  if (rain >= 50) return { label: 'High', className: 'bg-[#FDE7E8] text-[#B3261E]' }
-  if (rain >= 25) return { label: 'Med', className: 'bg-[#FCF0DA] text-[#8A5A00]' }
-  return { label: 'Low', className: 'bg-[#E1F3E8] text-[#1E7A44]' }
+  if (rain >= 50) {
+    return {
+      label: 'No spray',
+      className: 'bg-[#FFE4E0] text-[#C23B2E]',
+      cardClass: 'border-[#F4C7C2] bg-[#FFF5F4]',
+      barClass: 'bg-[#2F80ED]',
+      tone: 'high' as const,
+    }
+  }
+  if (rain >= 25) {
+    return {
+      label: 'Caution',
+      className: 'bg-[#FFF1D6] text-[#9A6400]',
+      cardClass: 'border-[#F3DFA8] bg-[#FFF9EC]',
+      barClass: 'bg-[#2F80ED]',
+      tone: 'med' as const,
+    }
+  }
+  return {
+    label: 'Spray OK',
+    className: 'bg-[#E5F5D6] text-[#3B6D12]',
+    cardClass: 'border-[#D5E8B4] bg-[#F7FBEE]',
+    barClass: 'bg-[#2F80ED]',
+    tone: 'low' as const,
+  }
 }
 
 export function getTimeBasedGreeting(): string {

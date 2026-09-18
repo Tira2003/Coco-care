@@ -40,7 +40,7 @@ export const env = {
   fusionConfidenceThreshold: Number(process.env.FUSION_CONFIDENCE_THRESHOLD) || 0.75,
   openWeatherApiKey: process.env.OPENWEATHER_API_KEY ?? '',
   groqApiKey: process.env.GROQ_API_KEY ?? '',
-  groqModel: process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
+  groqModel: process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b',
   /** When false, skip Groq even if key is set. Default: enabled when key present. */
   groqEnabled: process.env.GROQ_ENABLED !== 'false',
   diseaseAlertRadiusKm: Number(process.env.DISEASE_ALERT_RADIUS_KM) || 25,

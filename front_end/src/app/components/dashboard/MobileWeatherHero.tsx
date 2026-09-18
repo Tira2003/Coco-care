@@ -1,86 +1,172 @@
-import { MapPin, Droplets, Wind, Umbrella } from 'lucide-react'
-import type { WeatherForecast } from '@/types'
-import { WeatherIconDisplay } from './dashboardUtils'
+import { Droplets, Wind, Umbrella, Loader2, Leaf, Gauge, Eye } from 'lucide-react'
+import type { ReactNode } from 'react'
+import type { Farm, WeatherForecast } from '@/types'
+import { WeatherIconDisplay, getWeatherRisk } from './dashboardUtils'
+import { FarmWeatherSelect } from './FarmWeatherSelect'
+import { WeatherPeriodCards } from './WeatherPeriodCards'
 
 interface MobileWeatherHeroProps {
-  farmName: string
+  farms: Farm[]
+  selectedFarmId?: string
+  onSelectFarm: (farmId: string) => void
   weather?: WeatherForecast
+  loading?: boolean
 }
 
-export function MobileWeatherHero({ farmName, weather }: MobileWeatherHeroProps) {
-  return (
-    <div className="relative overflow-hidden bg-[#2E5A27] rounded-[26px] p-5 text-white shadow-[0_6px_24px_rgba(46,90,39,0.22)]">
-      {/* Subtle curved layered shapes */}
-      <div className="absolute -right-8 -top-12 w-52 h-52 rounded-full bg-white/[0.07] pointer-events-none" />
-      <div className="absolute right-[-20px] bottom-[-40px] w-48 h-48 rounded-full bg-[#3D7133]/50 pointer-events-none" />
-      <div className="absolute left-[30%] bottom-[-50px] w-44 h-44 rounded-full bg-white/[0.04] pointer-events-none" />
+export function MobileWeatherHero({
+  farms,
+  selectedFarmId,
+  onSelectFarm,
+  weather,
+  loading,
+}: MobileWeatherHeroProps) {
+  const today = weather?.days?.[0]
+  const todayRain = today?.rainChance ?? weather?.current?.rainChance ?? 0
+  const todayRainMm = today?.rainMm ?? 0
 
-      {/* Location & TODAY pill */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[13px] text-white/90 font-medium">
-          <MapPin className="h-4 w-4 text-white/80" />
-          <span>{farmName}</span>
-        </div>
-        <span className="px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-extrabold tracking-wider uppercase backdrop-blur-xs">
-          TODAY
+  return (
+    <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0E3A2F] via-[#164A38] to-[#1D4E6B] p-5 text-white shadow-[0_10px_28px_rgba(29,78,107,0.28)]">
+      <div className="pointer-events-none absolute -right-8 -top-12 h-52 w-52 rounded-full bg-[#7EC8E3]/20 blur-2xl" />
+      <div className="pointer-events-none absolute right-[-20px] bottom-[-40px] h-48 w-48 rounded-full bg-[#C9F169]/15" />
+
+      <div className="relative flex items-center justify-between gap-3">
+        <FarmWeatherSelect
+          farms={farms}
+          selectedFarmId={selectedFarmId}
+          onChange={onSelectFarm}
+          variant="dark"
+        />
+        <span className="shrink-0 rounded-full bg-[#2F80ED]/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#D6ECFF] backdrop-blur-xs">
+          Today
         </span>
       </div>
 
-      {/* Temperature & description + weather icon */}
-      <div className="flex items-center justify-between mt-3">
-        <div>
-          <div className="text-[48px] font-extrabold text-white leading-none font-['Bricolage_Grotesque',Inter,sans-serif] tracking-tight">
-            {weather?.current?.temp ?? 29}°
-          </div>
-          <div className="text-[13px] text-white/85 font-medium mt-1">
-            {weather?.current?.description
-              ? `${weather.current.description} · feels like ${Math.round((weather.current.temp ?? 29) + 2)}°`
-              : 'Partly cloudy · feels like 31°'}
-          </div>
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-7 w-7 animate-spin text-[#B8E0F0]" />
         </div>
-
-        {/* Frosted glass icon box */}
-        <div className="w-13 h-13 rounded-[20px] bg-white/15 backdrop-blur-md flex items-center justify-center text-[#D8F396] shadow-xs shrink-0">
-          <WeatherIconDisplay icon={weather?.current?.icon ?? 'sun'} className="w-7 h-7 text-[#D8F396]" />
-        </div>
-      </div>
-
-      {/* 3 micro-metric badges (Humidity, Wind, Rain) */}
-      <div className="grid grid-cols-3 gap-2 mt-4 pt-1">
-        <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-[16px] py-2.5 px-3">
-          <Droplets className="h-4 w-4 text-[#D8F396] shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[13px] font-extrabold text-white leading-tight">
-              {weather?.current?.humidity ?? 78}%
+      ) : (
+        <>
+          <div className="relative mt-3 flex items-center justify-between">
+            <div>
+              <div className="font-['Bricolage_Grotesque',Inter,sans-serif] text-[52px] font-extrabold leading-none tracking-tight text-white">
+                {weather?.current?.temp ?? '—'}°
+              </div>
+              <div className="mt-1 text-[13px] font-medium capitalize text-white/85">
+                {weather?.current?.description
+                  ? `${weather.current.description} · feels like ${weather.current.feelsLike}°`
+                  : 'Forecast unavailable'}
+              </div>
             </div>
-            <div className="text-[9px] font-bold text-white/75 tracking-wider uppercase leading-tight mt-0.5">
-              HUMIDITY
+
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-[#7EC8E3]/20 text-[#E8F6FF] shadow-xs backdrop-blur-md">
+              <WeatherIconDisplay icon={weather?.current?.icon ?? 'sun'} className="h-7 w-7 text-[#E8F6FF]" />
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-[16px] py-2.5 px-3">
-          <Wind className="h-4 w-4 text-[#D8F396] shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[13px] font-extrabold text-white leading-tight">
-              {weather?.current?.windSpeed ?? 12} km/h
-            </div>
-            <div className="text-[9px] font-bold text-white/75 tracking-wider uppercase leading-tight mt-0.5">
-              WIND
-            </div>
+          <div className="relative mt-4 grid grid-cols-3 gap-2">
+            <MiniStat
+              icon={<Droplets className="h-4 w-4 text-[#B8E0F0]" />}
+              value={`${weather?.current?.humidity ?? '—'}%`}
+              label="Humidity"
+            />
+            <MiniStat
+              icon={<Wind className="h-4 w-4 text-[#B8E0F0]" />}
+              value={`${weather?.current?.windSpeed ?? '—'} km/h`}
+              label={weather?.current?.windDirection || 'Wind'}
+            />
+            <MiniStat
+              icon={<Umbrella className="h-4 w-4 text-[#B8E0F0]" />}
+              value={`${todayRain}%`}
+              label={todayRainMm > 0 ? `${todayRainMm} mm` : 'Rain'}
+            />
+            <MiniStat
+              icon={<Gauge className="h-4 w-4 text-[#B8E0F0]" />}
+              value={weather?.current?.pressure ? `${weather.current.pressure}` : '—'}
+              label="hPa"
+            />
+            <MiniStat
+              icon={<Eye className="h-4 w-4 text-[#B8E0F0]" />}
+              value={
+                weather?.current?.visibilityKm != null ? `${weather.current.visibilityKm} km` : '—'
+              }
+              label="Visibility"
+            />
+            <MiniStat
+              icon={<Leaf className="h-4 w-4 text-[#C9F169]" />}
+              value={todayRain >= 50 ? 'Hold' : todayRain >= 25 ? 'Watch' : 'Spray'}
+              label="Window"
+            />
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-[16px] py-2.5 px-3">
-          <Umbrella className="h-4 w-4 text-[#D8F396] shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[13px] font-extrabold text-white leading-tight">
-              {weather?.days?.[0] ? `${weather.days[0].rainChance ?? weather.days[0].rain ?? 0}%` : '0%'}
+          {weather?.farmingTip ? (
+            <div className="relative mt-3 flex items-start gap-2 rounded-2xl border border-[#7EC8E3]/25 bg-[#0B2A36]/35 p-3">
+              <Leaf className="mt-0.5 h-4 w-4 shrink-0 text-[#C9F169]" />
+              <p className="text-[12px] font-semibold leading-relaxed text-[#EAF8B8]">
+                {weather.farmingTip}
+              </p>
             </div>
-            <div className="text-[9px] font-bold text-white/75 tracking-wider uppercase leading-tight mt-0.5">
-              RAIN
+          ) : null}
+
+          {weather?.days?.length ? (
+            <div className="relative mt-4 flex gap-2 overflow-x-auto pb-1">
+              {weather.days.map((day, index) => {
+                const rain = day.rainChance ?? day.rain ?? 0
+                const risk = getWeatherRisk(day)
+                const isToday = index === 0 || day.day.toLowerCase() === 'today'
+                return (
+                  <div
+                    key={`${day.day}-${day.date}`}
+                    className={`min-w-[6.4rem] rounded-2xl px-2.5 py-2.5 ${
+                      isToday ? 'bg-[#2F80ED]/25' : 'bg-white/10'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#B8E0F0]">
+                      {isToday ? 'Today' : day.day}
+                    </div>
+                    <WeatherIconDisplay icon={day.icon} className="mx-auto my-1 h-5 w-5 text-[#E8F6FF]" />
+                    <div className="text-[12px] font-extrabold">
+                      {day.high}°
+                      <span className="ml-0.5 text-[10px] font-medium text-white/60">{day.low}°</span>
+                    </div>
+                    <div className="mt-1 text-[9px] font-semibold text-[#D6ECFF]">
+                      {rain}% · {day.rainMm > 0 ? `${day.rainMm} mm` : '0 mm'}
+                    </div>
+                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/15">
+                      <div
+                        className="h-full rounded-full bg-[#7EC8E3]"
+                        style={{ width: `${Math.max(8, Math.min(rain, 100))}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-[9px] font-bold text-[#C9F169]">{risk.label}</div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
+          ) : null}
+          <WeatherPeriodCards weekly={weather?.weekly} monthly={weather?.monthly} compact />
+        </>
+      )}
+    </div>
+  )
+}
+
+function MiniStat({
+  icon,
+  value,
+  label,
+}: {
+  icon: ReactNode
+  value: string
+  label: string
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-[16px] bg-white/10 px-3 py-2.5 backdrop-blur-md">
+      <div className="shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <div className="truncate text-[13px] font-extrabold leading-tight text-white">{value}</div>
+        <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wider leading-tight text-white/75">
+          {label}
         </div>
       </div>
     </div>
