@@ -180,3 +180,71 @@ export interface KnowledgeArticle {
   content: string
   sourceUrl?: string | null
 }
+
+export type VerificationStatus = 'verified' | 'ai_suspected'
+export type ThreatLevel = 'low' | 'medium' | 'high' | 'critical'
+
+export interface HeatmapPoint {
+  lat: number
+  lng: number
+  weight: number
+  diseaseType: string
+  verificationStatus: VerificationStatus
+  threatLevel: ThreatLevel
+  createdAt?: string
+  reportId?: string
+  farmId?: string
+  farmName?: string
+  district?: string
+  count?: number
+}
+
+export interface DiseaseAlert {
+  id: string
+  reportId: string
+  farmId: string
+  diseaseType: string
+  alertType: VerificationStatus
+  distanceKm: number
+  message: string
+  read: boolean
+  createdAt: string
+  severity: ThreatLevel
+}
+
+export interface NearbyOutbreak {
+  lat: number
+  lng: number
+  diseaseType: string
+  weight: number
+  distanceKm: number
+  reportId: string
+  farmId: string
+  verificationStatus: VerificationStatus
+  threatLevel: ThreatLevel
+  createdAt: string
+}
+
+export interface NearbyResponse {
+  radiusKm: number
+  farms: Array<{
+    farmId: string
+    farmName: string
+    lat: number
+    lng: number
+    outbreaks: NearbyOutbreak[]
+  }>
+  nearest: {
+    diseaseType: string
+    distanceKm: number
+    farmName: string
+    threatLevel: ThreatLevel
+    verificationStatus: VerificationStatus
+  } | null
+}
+
+export interface DiseaseMapStats {
+  byDisease: Array<{ diseaseType: string; count: number }>
+  byWeek: Array<{ week: string; count: number }>
+  highRiskCount: number
+}
