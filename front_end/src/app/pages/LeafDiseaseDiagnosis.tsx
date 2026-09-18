@@ -18,6 +18,7 @@ import { farmApi, diagnosisApi } from '@/api/services'
 import type { DiagnosisResult } from '@/types'
 import { LeafPredictionPanel } from '@/app/diagnosis/LeafPredictionPanel'
 import { LeafDiseaseDetailCard } from '@/app/diagnosis/LeafDiseaseDetailCard'
+import { AskOfficerCta } from '@/app/components/AskOfficerCta'
 import { LEAF_PANEL_BASE } from '@/app/diagnosis/panelLayout'
 import { compressImageForUpload } from '@/utils/compressImage'
 import {
@@ -614,6 +615,7 @@ export function LeafDiseaseDiagnosis() {
                   Also consider: {result.secondaryConditions.join('; ')}.
                 </p>
               ) : null}
+              <AskOfficerCta reportId={result?.id} farmId={farmId} />
             </div>
           </div>
         </div>
