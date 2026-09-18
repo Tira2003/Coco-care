@@ -8,8 +8,6 @@ import {
   ArrowRight,
   Check,
   Palmtree,
-  Microscope,
-  Sprout,
   IdCard,
   Lock,
   AlertCircle,
@@ -157,30 +155,8 @@ export function LoginPage() {
             </Link>
           </div>
 
-          {/* Floating Badges */}
-          <div className="relative z-10 my-8 space-y-2.5">
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-[#E8F1E2]"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#C9F169] animate-ping" />
-              Live outbreak map
-            </motion.div>
-            <div>
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 6.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-[#E8F1E2]"
-              >
-                <Microscope className="h-3.5 w-3.5 text-[#C9F169]" />
-                <span>94% detection accuracy</span>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Middle Body - vertically centered */}
-          <div className="relative z-10 my-auto py-8">
+          {/* Middle Body - positioned slightly down towards bottom */}
+          <div className="relative z-10 mt-auto mb-12 py-4">
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C9F169] mb-2">
               <span className="w-2 h-2 rounded-full bg-[#C9F169]" />
               AI Coconut Intelligence
@@ -194,12 +170,6 @@ export function LoginPage() {
             <p className="text-[#B9C9B4] text-sm leading-relaxed max-w-sm">
               Detect diseases early with AI leaf scans, chat with a CRI-grounded assistant, and get alerts before trouble spreads.
             </p>
-          </div>
-
-          {/* Bottom Footer Note */}
-          <div className="relative z-10 text-xs text-[#8FA68B] flex items-center gap-2 pt-4 border-t border-white/10">
-            <Sprout className="h-3.5 w-3.5 text-[#7FA81B]" />
-            <span>Grounded in <b className="text-[#C4D4BB] font-semibold">CRI advisory circulars</b></span>
           </div>
         </aside>
 
@@ -216,10 +186,6 @@ export function LoginPage() {
                 Coco<b className="text-[#7FA81B]">Care</b>
               </span>
             </Link>
-          </div>
-
-          <div className="w-11 h-11 rounded-2xl bg-[#123524] text-[#C9F169] flex items-center justify-center mb-5 shadow-sm">
-            <Palmtree className="h-6 w-6 text-[#C9F169]" />
           </div>
 
           <header className="mb-7">

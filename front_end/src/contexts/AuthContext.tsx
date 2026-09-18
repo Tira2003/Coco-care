@@ -40,20 +40,21 @@ function clearSession() {
   localStorage.removeItem(USER_KEY)
 }
 
-const DEMO_FARMER: User = {
-  id: 'demo-farmer-id',
-  username: 'akeel',
-  name: 'Akeel Bandara',
-  email: 'akeel@cococare.lk',
-  phone: '+94 77 123 4567',
-  role: 'farmer',
-  createdAt: new Date().toISOString(),
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(DEMO_FARMER)
-  const [loading, setLoading] = useState(false)
-
+  
+  const [user, setUser] = useState<User | null>(() => {
+    const raw = localStorage.getItem(USER_KEY)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as User
+    } catch {
+      return null
+    }
+  })
+  
+  const [loading, setLoading] = useState(true)
+  
   useEffect(() => {
     let cancelled = false
 
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem(TOKEN_KEY)
       if (!token) {
         if (!cancelled) {
-          setUser(DEMO_FARMER)
+          setUser(null)
           setLoading(false)
         }
         return
@@ -76,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me)
       } catch {
         if (cancelled) return
-        setUser(DEMO_FARMER)
+        clearSession()
+        setUser(null)
       } finally {
         if (!cancelled) setLoading(false)
       }
