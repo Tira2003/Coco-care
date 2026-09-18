@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+﻿import { Link } from 'react-router'
 import {
   LayoutGrid,
   FileText,
@@ -97,7 +97,7 @@ export function DesktopSidebar({
           <>
             <Link to="/app" className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#123524] text-lg shadow-xs shrink-0">
-                🌴
+                <img src="/new logo.svg" alt="Coco Care logo" className="h-5 w-5 object-contain" />
               </div>
               <span className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-sm tracking-wider text-[#10241A] whitespace-nowrap">
                 COCO CARE
@@ -122,7 +122,7 @@ export function DesktopSidebar({
             title="Expand sidebar"
             aria-label="Expand navigation"
           >
-            🌴
+            <img src="/new logo.svg" alt="Coco Care logo" className="h-5 w-5 object-contain" />
           </button>
         )}
       </div>
@@ -331,7 +331,7 @@ export function DesktopSidebar({
         >
           <div className="border-b border-[#E6EADF] p-3">
             <div className="truncate text-xs font-bold text-[#10241A]">{user?.name}</div>
-            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} · {user?.role}</div>
+            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} Â· {user?.role}</div>
             {user?.email && <div className="truncate text-[10px] text-[#5C6B60] mt-0.5">{user.email}</div>}
           </div>
           <div className="p-1 space-y-0.5">
@@ -365,3 +365,4 @@ export function DesktopSidebar({
     </aside>
   )
 }
+

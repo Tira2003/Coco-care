@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Check } from 'lucide-react'
 import {
   LandingHeader,
-  HeroSection,
+  HeroSection2,
+  WhySection,
   StatsSection,
   AboutSection,
   FeaturesSection,
@@ -54,9 +55,10 @@ export function LandingPage() {
 
       {/* Main Content Sections */}
       <main id="top">
-        <HeroSection />
+        <HeroSection2 />
         <StatsSection />
-        <AboutSection />
+        <WhySection />
+         <AboutSection />
         <FeaturesSection />
         <HowItWorksSection />
         <DiseaseMapSection />

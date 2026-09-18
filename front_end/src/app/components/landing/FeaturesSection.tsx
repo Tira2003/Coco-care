@@ -13,7 +13,7 @@ import {
 
 export function FeaturesSection() {
   return (
-    <section className="py-20 sm:py-24 bg-white border-y border-[#E4E8DC]" id="features">
+    <section className="py-28 sm:py-32 bg-white border-y border-[#E4E8DC]" id="features">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 items-end mb-14">
           <div>
