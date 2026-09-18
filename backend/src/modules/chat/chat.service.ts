@@ -7,6 +7,7 @@ import {
   searchChunksByKeywords,
   type RetrievedChunk,
 } from '../knowledge/knowledge.repository.js'
+import { CHAT_WELCOME_MESSAGE, isWelcomeMessage } from './chat.constants.js'
 import {
   createConversation,
   deleteConversationForUser,
@@ -53,8 +54,30 @@ export async function getConversations(userId: string) {
   return listConversations(userId)
 }
 
+async function ensureWelcomeMessage(
+  conversationId: string,
+  userId: string,
+  createdAt: string,
+) {
+  const messages = await listMessages(conversationId)
+  if (messages.some((message) => isWelcomeMessage(message.role, message.content))) {
+    return messages
+  }
+
+  await insertMessage({
+    conversationId,
+    userId,
+    role: 'assistant',
+    content: CHAT_WELCOME_MESSAGE,
+    createdAt,
+  })
+  return listMessages(conversationId)
+}
+
 export async function startConversation(userId: string) {
-  return createConversation(userId)
+  const conversation = await createConversation(userId)
+  await ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
+  return conversation
 }
 
 export async function removeConversation(userId: string, conversationId: string) {
@@ -65,7 +88,7 @@ export async function removeConversation(userId: string, conversationId: string)
 export async function getMessages(userId: string, conversationId: string) {
   const conversation = await findConversationForUser(conversationId, userId)
   if (!conversation) throw notFound('Conversation not found')
-  return listMessages(conversationId)
+  return ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
 }
 
 export async function sendMessage(
@@ -74,6 +97,8 @@ export async function sendMessage(
 ): Promise<ChatMessage> {
   const conversation = await findConversationForUser(input.conversationId, userId)
   if (!conversation) throw notFound('Conversation not found')
+
+  await ensureWelcomeMessage(conversation.id, userId, conversation.createdAt)
 
   await insertMessage({
     conversationId: conversation.id,

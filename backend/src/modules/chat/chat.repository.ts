@@ -94,12 +94,19 @@ export async function insertMessage(input: {
   userId: string
   role: 'user' | 'assistant'
   content: string
+  createdAt?: string
 }): Promise<ChatMessage> {
   const result = await pool.query<MessageRow>(
-    `INSERT INTO chat_messages (conversation_id, user_id, role, content)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, conversation_id, role, content, created_at`,
-    [input.conversationId, input.userId, input.role, input.content],
+    input.createdAt
+      ? `INSERT INTO chat_messages (conversation_id, user_id, role, content, created_at)
+         VALUES ($1, $2, $3, $4, $5::timestamptz)
+         RETURNING id, conversation_id, role, content, created_at`
+      : `INSERT INTO chat_messages (conversation_id, user_id, role, content)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, conversation_id, role, content, created_at`,
+    input.createdAt
+      ? [input.conversationId, input.userId, input.role, input.content, input.createdAt]
+      : [input.conversationId, input.userId, input.role, input.content],
   )
   return mapMessage(result.rows[0]!)
 }
