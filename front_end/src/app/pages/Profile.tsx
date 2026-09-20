@@ -286,7 +286,7 @@ export function Profile() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#2d5f2e]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
       </div>
     )
   }
@@ -294,19 +294,23 @@ export function Profile() {
   return (
     <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
       <div>
-        <h1 className="mb-1 text-2xl text-[#1a2e1a] sm:mb-2 sm:text-3xl">Profile</h1>
-        <p className="text-sm text-[#6b7c6b] sm:text-base">Your account and registered farms.</p>
+        <h1 className="font-['Bricolage_Grotesque',Inter,sans-serif] mb-1 text-2xl font-bold tracking-tight text-[#10241A] sm:mb-2 sm:text-3xl">
+          Profile
+        </h1>
+        <p className="text-sm text-[#5C6B60] sm:text-base">Your account and registered farms.</p>
       </div>
 
-      <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-[#E6EADF] bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2d5f2e] to-[#1a2e1a] text-xl text-white sm:h-20 sm:w-20 sm:text-2xl">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#123524] font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold text-white sm:h-20 sm:w-20 sm:text-2xl">
               {initials}
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-xl text-gray-900 sm:text-2xl">{displayUser?.name}</h2>
-              <p className="truncate text-sm text-gray-600 capitalize sm:text-base">
+              <h2 className="truncate font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold tracking-tight text-[#10241A] sm:text-2xl">
+                {displayUser?.name}
+              </h2>
+              <p className="truncate text-sm capitalize text-[#5C6B60] sm:text-base">
                 {displayUser?.role} · @{displayUser?.username}
               </p>
             </div>
@@ -315,7 +319,7 @@ export function Profile() {
             <button
               type="button"
               onClick={openProfileDialog}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-sm text-[#2d5f2e] hover:bg-green-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <Edit2 className="h-4 w-4" />
               Edit
@@ -323,7 +327,7 @@ export function Profile() {
             <button
               type="button"
               onClick={openPasswordDialog}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-sm text-[#2d5f2e] hover:bg-green-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <KeyRound className="h-4 w-4" />
               Password
@@ -331,19 +335,21 @@ export function Profile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
           <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={displayUser?.phone ?? 'N/A'} />
           <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={displayUser?.email ?? 'N/A'} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-[#E6EADF] bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-lg text-gray-900">My Farms</h3>
+          <h3 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
+            My Farms
+          </h3>
           <button
             type="button"
             onClick={openCreateFarm}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#2d5f2e] px-3 py-2 text-sm text-white hover:bg-[#1a2e1a] sm:w-auto"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Add Farm
@@ -352,18 +358,22 @@ export function Profile() {
 
         <div className="space-y-3">
           {farms.length === 0 ? (
-            <p className="text-sm text-gray-500">No farms registered yet.</p>
+            <p className="text-sm text-[#5C6B60]">No farms registered yet.</p>
           ) : (
             farms.map((farm) => (
               <div
                 key={farm.id}
-                className="flex items-start justify-between gap-3 rounded-lg bg-gray-50 p-3 sm:p-4"
+                className="flex items-start justify-between gap-3 rounded-2xl border border-[#E6EADF] bg-[#F6F7F2] p-3 sm:p-4"
               >
                 <div className="flex min-w-0 items-start gap-3">
-                  <Home className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#2d5f2e]" />
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EDF3E0] text-[#123524]">
+                    <Home className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-gray-900">{farm.name}</div>
-                    <div className="flex items-start gap-1 text-sm text-gray-600">
+                    <div className="truncate font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+                      {farm.name}
+                    </div>
+                    <div className="flex items-start gap-1 text-sm text-[#5C6B60]">
                       <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
                       <span className="break-words">
                         {farm.location} · {farm.acreage} acres · {farm.treeCount} trees
@@ -376,7 +386,7 @@ export function Profile() {
                     type="button"
                     title="Edit farm"
                     onClick={() => openEditFarm(farm)}
-                    className="rounded-lg p-2.5 text-[#2d5f2e] hover:bg-green-100"
+                    className="rounded-full p-2.5 text-[#123524] hover:bg-white"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
@@ -387,7 +397,7 @@ export function Profile() {
                       deleteFarmMutation.reset()
                       setDeleteTarget(farm)
                     }}
-                    className="rounded-lg p-2.5 text-red-600 hover:bg-red-50"
+                    className="rounded-full p-2.5 text-[#E5484D] hover:bg-white"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -401,7 +411,9 @@ export function Profile() {
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Edit Profile
+            </DialogTitle>
             <DialogDescription>Update your contact details.</DialogDescription>
           </DialogHeader>
           <form id="profile-form" onSubmit={handleProfileSubmit} className="grid gap-3">
@@ -430,7 +442,7 @@ export function Profile() {
             <button
               type="button"
               onClick={() => setShowProfileDialog(false)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
             >
               Cancel
             </button>
@@ -438,9 +450,9 @@ export function Profile() {
               type="submit"
               form="profile-form"
               disabled={profileMutation.isPending}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
+              className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
             >
-              {profileMutation.isPending ? 'Saving...' : 'Save Changes'}
+              {profileMutation.isPending ? 'Saving…' : 'Save Changes'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -449,7 +461,9 @@ export function Profile() {
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Change Password
+            </DialogTitle>
             <DialogDescription>Enter your current password before setting a new one.</DialogDescription>
           </DialogHeader>
           <form id="password-form" onSubmit={handlePasswordSubmit} className="grid gap-3">
@@ -488,7 +502,7 @@ export function Profile() {
             <button
               type="button"
               onClick={() => setShowPasswordDialog(false)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
             >
               Cancel
             </button>
@@ -496,9 +510,9 @@ export function Profile() {
               type="submit"
               form="password-form"
               disabled={passwordMutation.isPending}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
+              className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
             >
-              {passwordMutation.isPending ? 'Saving...' : 'Change Password'}
+              {passwordMutation.isPending ? 'Saving…' : 'Change Password'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -507,7 +521,9 @@ export function Profile() {
       <Dialog open={showFarmDialog} onOpenChange={(open) => (open ? setShowFarmDialog(true) : closeFarmDialog())}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingFarm ? 'Edit Farm' : 'Add New Farm'}</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              {editingFarm ? 'Edit Farm' : 'Add New Farm'}
+            </DialogTitle>
             <DialogDescription>
               Register and maintain coconut estates for disease reporting and diagnosis.
             </DialogDescription>
@@ -563,7 +579,7 @@ export function Profile() {
             <button
               type="button"
               onClick={closeFarmDialog}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
             >
               Cancel
             </button>
@@ -571,9 +587,9 @@ export function Profile() {
               type="submit"
               form="farm-form"
               disabled={farmBusy}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
+              className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
             >
-              {farmBusy ? 'Saving...' : 'Save Farm'}
+              {farmBusy ? 'Saving…' : 'Save Farm'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -582,12 +598,14 @@ export function Profile() {
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Farm</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Delete Farm
+            </DialogTitle>
             <DialogDescription>
               This is only allowed for farms with no disease reports or alerts.
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-[#10241A]">
             Delete {deleteTarget?.name}? This action cannot be undone.
           </p>
           {deleteFarmMutation.isError ? (
@@ -597,7 +615,7 @@ export function Profile() {
             <button
               type="button"
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
             >
               Cancel
             </button>
@@ -605,9 +623,9 @@ export function Profile() {
               type="button"
               disabled={deleteFarmMutation.isPending || !deleteTarget}
               onClick={() => deleteTarget && deleteFarmMutation.mutate(deleteTarget.id)}
-              className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60"
+              className="rounded-full bg-[#E5484D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c73e43] disabled:opacity-60"
             >
-              {deleteFarmMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteFarmMutation.isPending ? 'Deleting…' : 'Delete'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -618,11 +636,13 @@ export function Profile() {
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-      <span className="text-[#2d5f2e]">{icon}</span>
-      <div>
-        <div className="text-gray-500 text-xs">{label}</div>
-        <div className="text-gray-900">{value}</div>
+    <div className="flex items-center gap-3 rounded-2xl bg-[#F6F7F2] p-3.5">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDF3E0] text-[#123524]">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#7FA81B]">{label}</div>
+        <div className="truncate font-semibold text-[#10241A]">{value}</div>
       </div>
     </div>
   )
@@ -649,7 +669,7 @@ function TextField({
 }) {
   return (
     <label className="space-y-1">
-      <span className="text-sm text-gray-600">{label}</span>
+      <span className="text-sm font-semibold text-[#10241A]">{label}</span>
       <input
         type={type}
         placeholder={placeholder}
@@ -657,7 +677,7 @@ function TextField({
         min={min}
         step={step}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d5f2e]/30"
+        className="w-full rounded-2xl border border-[#E6EADF] bg-[#F6F7F2] px-3 py-2.5 text-sm text-[#10241A] outline-none focus:border-[#123524] focus:bg-white"
         required={required}
       />
     </label>
