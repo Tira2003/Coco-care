@@ -12,6 +12,8 @@ interface DesktopHeaderProps {
   notifications: InboxNotification[]
   onMarkRead: (item: InboxNotification) => void
   onMarkAllRead: () => Promise<void> | void
+  notificationsHref?: string
+  profileHref?: string
 }
 
 export function DesktopHeader({
@@ -22,6 +24,8 @@ export function DesktopHeader({
   notifications,
   onMarkRead,
   onMarkAllRead,
+  notificationsHref = '/app/notifications',
+  profileHref = '/app/profile',
 }: DesktopHeaderProps) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -115,7 +119,7 @@ export function DesktopHeader({
                   type="button"
                   onClick={() => {
                     setOpen(false)
-                    navigate('/app/notifications')
+                    navigate(notificationsHref)
                   }}
                   className="w-full rounded-xl px-3 py-2 text-center text-xs font-bold text-[#123524] hover:bg-[#F6F7F2]"
                 >
@@ -127,7 +131,7 @@ export function DesktopHeader({
         </div>
 
         <Link
-          to="/app/profile"
+          to={profileHref}
           className={`flex min-h-9 items-center gap-2 rounded-full border border-[#E6EADF] py-1 px-3 text-xs font-medium text-[#10241A] hover:border-[#123524] transition-colors ${
             isScrolled ? 'bg-[#F6F7F2] hover:bg-white' : 'bg-white hover:bg-[#F1F5EA]'
           }`}

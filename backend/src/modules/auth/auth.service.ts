@@ -24,6 +24,7 @@ import {
   listFarmsByUserId,
   setPrimaryFarmId,
   updateFarmerContact,
+  updateOfficerContact,
   updateFarmForUser,
   updatePassword,
   usernameExists,
@@ -216,6 +217,30 @@ export async function updateFarmerProfile(userId: string, input: UpdateProfileIn
 
   const farms = await listFarmsByUserId(updated.id)
   return toPublicUser(updated, farms)
+}
+
+export async function updateOfficerProfile(userId: string, input: UpdateProfileInput) {
+  const account = await findAccountById(userId, 'officer')
+  if (!account) {
+    throw unauthorized('Invalid or expired token')
+  }
+
+  const name = input.name.trim()
+  const email =
+    typeof input.email === 'string' && input.email.trim() ? input.email.trim() : null
+  const phone =
+    typeof input.phone === 'string' && input.phone.trim() ? input.phone.trim() : null
+
+  if (email && (await emailTakenByOther(email, account.id))) {
+    throw conflict('An account with this email already exists')
+  }
+
+  const updated = await updateOfficerContact(account.id, { name, email, phone })
+  if (!updated) {
+    throw unauthorized('Invalid or expired token')
+  }
+
+  return toPublicUser(updated)
 }
 
 export async function setFarmerPrimaryFarm(userId: string, farmId: string) {

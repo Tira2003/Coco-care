@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 const USER_KEY = 'coco_user'
 
 export function getRoleHomePath(role: UserRole): string {
-  if (role === 'officer') return '/officer/reports'
+  if (role === 'officer') return '/officer'
   if (role === 'admin') return '/admin'
   return '/app'
 }

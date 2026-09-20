@@ -11,6 +11,7 @@ interface MobileNotificationsSheetProps {
   onMarkRead: (item: InboxNotification) => void
   onMarkAllRead: () => Promise<void>
   onDismiss: (item: InboxNotification) => void
+  inboxHref?: string
 }
 
 export function MobileNotificationsSheet({
@@ -21,6 +22,7 @@ export function MobileNotificationsSheet({
   onMarkRead,
   onMarkAllRead,
   onDismiss,
+  inboxHref = '/app/notifications',
 }: MobileNotificationsSheetProps) {
   if (!isOpen) return null
   const preview = notifications.slice(0, 8)
@@ -95,7 +97,7 @@ export function MobileNotificationsSheet({
 
         <div className="mt-4 pt-3 border-t border-[#F0F3EB] text-center">
           <Link
-            to="/app/notifications"
+            to={inboxHref}
             onClick={onClose}
             className="text-xs font-bold text-[#123524] hover:underline"
           >

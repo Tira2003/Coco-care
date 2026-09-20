@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../utils/asyncHandler.js'
 import { unauthorized } from '../../utils/errors.js'
-import { changePasswordSchema, loginSchema, registerSchema } from './auth.schemas.js'
+import { changePasswordSchema, loginSchema, registerSchema, updateProfileSchema } from './auth.schemas.js'
 import * as authService from './auth.service.js'
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
@@ -27,4 +27,18 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   const input = changePasswordSchema.parse(req.body)
   const result = await authService.changePassword(req.user.id, req.user.role, input)
   res.json(result)
+})
+
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw unauthorized()
+  const input = updateProfileSchema.parse(req.body)
+  if (req.user.role === 'officer') {
+    res.json(await authService.updateOfficerProfile(req.user.id, input))
+    return
+  }
+  if (req.user.role === 'farmer') {
+    res.json(await authService.updateFarmerProfile(req.user.id, input))
+    return
+  }
+  throw unauthorized()
 })

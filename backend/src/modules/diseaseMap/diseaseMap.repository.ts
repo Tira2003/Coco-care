@@ -145,6 +145,29 @@ export async function listOutbreakRows(filters: HeatmapQuery = {}): Promise<Outb
   return result.rows.map(mapOutbreak)
 }
 
+export async function listFarmsForAlerts(): Promise<
+  Array<{ id: string; userId: string; name: string; lat: number; lng: number }>
+> {
+  const result = await pool.query<{
+    id: string
+    user_id: string
+    name: string
+    latitude: string | number
+    longitude: string | number
+  }>(
+    `SELECT id, user_id, name, latitude, longitude
+     FROM farms
+     WHERE latitude IS NOT NULL AND longitude IS NOT NULL`,
+  )
+  return result.rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    lat: Number(row.latitude),
+    lng: Number(row.longitude),
+  }))
+}
+
 export async function listAlertsForFarmer(userId: string): Promise<DiseaseAlert[]> {
   const result = await pool.query<AlertRow>(
     `SELECT id, report_id, farm_id, disease_type, alert_type, distance_km, message, read_at, created_at

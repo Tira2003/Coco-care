@@ -51,6 +51,10 @@ export const authApi = {
     const { data } = await apiClient.patch<{ ok: boolean }>('/auth/password', payload)
     return data
   },
+  updateProfile: async (payload: { name: string; email?: string | null; phone?: string | null }) => {
+    const { data } = await apiClient.patch<User>('/auth/profile', payload)
+    return data
+  },
 }
 
 export const farmApi = {

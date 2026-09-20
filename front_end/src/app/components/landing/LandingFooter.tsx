@@ -56,7 +56,7 @@ export function LandingFooter() {
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm font-medium">
               <li><Link to="/app" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Farmer App</Link></li>
-              <li><Link to="/officer/reports" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Officer Console</Link></li>
+              <li><Link to="/officer" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Officer Console</Link></li>
               <li><Link to="/admin" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Admin Console</Link></li>
               <li><a href="#map" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Disease Heatmap</a></li>
               <li><a href="#features" className="text-[#1E382B] hover:text-[#10241A] transition-colors">CRI Chatbot</a></li>

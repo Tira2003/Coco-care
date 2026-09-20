@@ -4,6 +4,7 @@ import { unauthorized } from '../../utils/errors.js'
 import { heatmapQuerySchema, nearbyQuerySchema } from './diseaseMap.schemas.js'
 import {
   assertFarmer,
+  assertHeatmapViewer,
   getAlerts,
   getHeatmap,
   getNearby,
@@ -23,7 +24,8 @@ export const publicHeatmap = asyncHandler(async (_req: Request, res: Response) =
 })
 
 export const heatmap = asyncHandler(async (req: Request, res: Response) => {
-  farmer(req)
+  if (!req.user) throw unauthorized()
+  assertHeatmapViewer(req.user.role)
   const filters = heatmapQuerySchema.parse(req.query)
   res.json(await getHeatmap(filters))
 })
@@ -45,7 +47,8 @@ export const markRead = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const stats = asyncHandler(async (req: Request, res: Response) => {
-  farmer(req)
+  if (!req.user) throw unauthorized()
+  assertHeatmapViewer(req.user.role)
   const filters = heatmapQuerySchema.parse(req.query)
   res.json(await getStats(filters))
 })

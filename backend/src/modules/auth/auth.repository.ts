@@ -149,18 +149,18 @@ export async function emailExists(email: string, client: Db = pool) {
   return (result.rowCount ?? 0) > 0
 }
 
-export async function emailTakenByOther(email: string, farmerId: string): Promise<boolean> {
+export async function emailTakenByOther(email: string, accountId: string): Promise<boolean> {
   const result = await pool.query(
     `SELECT 1 FROM (
-       SELECT id, email FROM farmers WHERE id <> $2
+       SELECT id, email FROM farmers
        UNION ALL
        SELECT id, email FROM officers
        UNION ALL
        SELECT id, email FROM admins
      ) accounts
-     WHERE email IS NOT NULL AND lower(email) = lower($1)
+     WHERE email IS NOT NULL AND lower(email) = lower($1) AND id <> $2
      LIMIT 1`,
-    [email, farmerId],
+    [email, accountId],
   )
   return (result.rowCount ?? 0) > 0
 }
@@ -178,6 +178,51 @@ export async function updateFarmerContact(
   )
   const row = result.rows[0]
   return row ? mapAccount(row, 'farmer') : null
+}
+
+export async function updateOfficerContact(
+  id: string,
+  input: { name: string; email: string | null; phone: string | null },
+): Promise<AuthAccount | null> {
+  const result = await pool.query<AccountRow>(
+    `UPDATE officers
+     SET name = $2, email = $3, phone = $4, updated_at = now()
+     WHERE id = $1
+     RETURNING id, username, password_hash, name, email, phone, is_active, officer_id, assigned_region`,
+    [id, input.name, input.email, input.phone],
+  )
+  const row = result.rows[0]
+  return row ? mapAccount(row, 'officer') : null
+}
+
+export async function insertOfficer(input: {
+  username: string
+  passwordHash: string
+  name: string
+  email: string | null
+  phone: string | null
+  officerId: string | null
+  assignedRegion: string | null
+  adminPassword?: string | null
+}): Promise<AuthAccount> {
+  const result = await pool.query<AccountRow>(
+    `INSERT INTO officers (
+       username, password_hash, name, email, phone, officer_id, assigned_region, admin_password
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, username, password_hash, name, email, phone, is_active, officer_id, assigned_region`,
+    [
+      input.username,
+      input.passwordHash,
+      input.name,
+      input.email,
+      input.phone,
+      input.officerId,
+      input.assignedRegion,
+      input.adminPassword ?? null,
+    ],
+  )
+  return mapAccount(result.rows[0]!, 'officer')
 }
 
 export async function insertFarmer(

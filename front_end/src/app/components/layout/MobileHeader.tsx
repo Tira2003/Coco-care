@@ -8,6 +8,7 @@ interface MobileHeaderProps {
   initials: string
   onOpenProfile: () => void
   onOpenNotifications: () => void
+  homeHref?: string
 }
 
 export function MobileHeader({
@@ -17,14 +18,16 @@ export function MobileHeader({
   initials,
   onOpenProfile,
   onOpenNotifications,
+  homeHref = '/app',
 }: MobileHeaderProps) {
+  const isHome = locationPath === homeHref
   return (
     <header
       className="lg:hidden flex shrink-0 items-center justify-between h-[58px] px-4 bg-[#F6F7F2] border-b border-[#E6EADF]/60 text-[#123524] z-20"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       {/* Left: Farm location pill on /app, or Logo on other screens */}
-      {locationPath === '/app' ? (
+      {isHome ? (
         <button
           type="button"
           onClick={onOpenProfile}
@@ -35,7 +38,7 @@ export function MobileHeader({
           <ChevronDown className="w-3.5 h-3.5 text-[#5C6B60]" />
         </button>
       ) : (
-        <Link to="/app" className="flex items-center gap-2">
+        <Link to={homeHref} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-[#DCFCE7] flex items-center justify-center text-[#166534] shrink-0 shadow-2xs">
             <Leaf className="w-4 h-4" />
           </div>

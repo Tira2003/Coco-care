@@ -195,7 +195,7 @@ export function LoginPage() {
               </span>
             </h1>
             <p className="text-[#5C6B60] text-sm sm:text-base mt-2">
-              Log in to your plantation workspace — your grove has been waiting.
+              Farmers and officers sign in with their NIC on this screen.
             </p>
           </header>
 

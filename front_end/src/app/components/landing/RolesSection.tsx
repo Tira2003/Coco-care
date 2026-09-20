@@ -33,7 +33,7 @@ const roles = [
       'Help turn verified reports into useful regional awareness',
     ],
     linkLabel: 'See the review flow',
-    linkTo: '/officer/reports',
+    linkTo: '/officer',
   },
   {
     icon: Settings,

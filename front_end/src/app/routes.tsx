@@ -16,8 +16,11 @@ import { Notifications } from './pages/Notifications'
 import { Profile } from './pages/Profile'
 import { Settings } from './pages/Settings'
 import { OfficerLayout } from './layouts/OfficerLayout'
+import { OfficerDashboard } from './pages/officer/OfficerDashboard'
 import { ReportReviewPage } from './pages/officer/ReportReviewPage'
 import { OfficerConsultationsPage } from './pages/officer/OfficerConsultationsPage'
+import { OfficerHelpCenter } from './pages/officer/OfficerHelpCenter'
+import { OfficerSettings } from './pages/officer/OfficerSettings'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
@@ -65,9 +68,13 @@ export const router = createBrowserRouter([
         path: '/officer',
         Component: OfficerLayout,
         children: [
+          { index: true, Component: OfficerDashboard },
           { path: 'reports', Component: ReportReviewPage },
           { path: 'consultations', Component: OfficerConsultationsPage },
+          { path: 'heatmap', Component: DiseaseHeatmap },
           { path: 'notifications', Component: Notifications },
+          { path: 'help', Component: OfficerHelpCenter },
+          { path: 'settings', Component: OfficerSettings },
         ],
       },
     ],

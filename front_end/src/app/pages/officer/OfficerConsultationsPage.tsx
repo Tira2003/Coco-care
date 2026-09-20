@@ -24,9 +24,9 @@ function formatTime(iso: string) {
 }
 
 function officerBadge(inbox: ConsultationInbox) {
-  if (inbox === 'resolved') return { label: 'Resolved', className: 'bg-gray-100 text-gray-600' }
-  if (inbox === 'waiting') return { label: 'Waiting on farmer', className: 'bg-emerald-50 text-emerald-800' }
-  return { label: 'Needs reply', className: 'bg-amber-100 text-amber-800' }
+  if (inbox === 'resolved') return { label: 'Resolved', className: 'bg-[#F6F7F2] text-[#5C6B60]' }
+  if (inbox === 'waiting') return { label: 'Waiting on farmer', className: 'bg-[#DDF2EA] text-[#147A5C]' }
+  return { label: 'Needs reply', className: 'bg-[#FCF0DA] text-[#8A5A00]' }
 }
 
 export function OfficerConsultationsPage() {
@@ -95,20 +95,20 @@ export function OfficerConsultationsPage() {
 
   if (!assignedRegion) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-8 text-sm text-amber-900">
+      <div className="rounded-2xl border border-[#F5A524]/40 bg-[#FCF0DA] px-5 py-8 text-sm text-[#8A5A00]">
         No region assigned. Ask an admin to set your district so farmer consultations can reach this inbox.
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full min-h-0 flex-col space-y-4 lg:h-auto">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#2d5f2e]">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#123524]">
           {assignedRegion} desk
         </p>
-        <h1 className="mt-1 text-2xl font-semibold text-gray-900">Farmer consultations</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="mt-1 font-['Bricolage_Grotesque',Inter,sans-serif] text-2xl font-bold text-[#10241A]">Farmer consultations</h1>
+        <p className="mt-1 text-sm text-[#5C6B60]">
           Direct messages from farmers in your assigned district. Separate from Coco AI.
         </p>
       </div>
@@ -127,7 +127,7 @@ export function OfficerConsultationsPage() {
             type="button"
             onClick={() => setTab(id)}
             className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-              tab === id ? 'bg-[#2d5f2e] text-white' : 'bg-white text-gray-700 ring-1 ring-gray-200'
+              tab === id ? 'bg-[#123524] text-white' : 'bg-white text-[#10241A] ring-1 ring-[#E6EADF]'
             }`}
           >
             {label} {counts[id]}
@@ -135,15 +135,15 @@ export function OfficerConsultationsPage() {
         ))}
       </div>
 
-      <div className="grid overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm lg:grid-cols-[320px_1fr]">
-        <aside className="border-b border-green-100 lg:border-b-0 lg:border-r">
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#E6EADF] bg-white shadow-sm lg:grid-cols-[320px_1fr]">
+        <aside className="border-b border-[#E6EADF] lg:border-b-0 lg:border-r">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-sm text-gray-500">
+            <div className="flex items-center justify-center py-16 text-sm text-[#5C6B60]">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading inbox
             </div>
           ) : filtered.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-gray-500">
+            <p className="px-4 py-12 text-center text-sm text-[#5C6B60]">
               No consultations in this view.
             </p>
           ) : (
@@ -157,18 +157,18 @@ export function OfficerConsultationsPage() {
                     type="button"
                     onClick={() => setActiveId(item.id)}
                     className={`mb-1 w-full rounded-xl px-3 py-3 text-left ${
-                      active ? 'bg-green-50 ring-1 ring-green-200' : 'hover:bg-gray-50'
+                      active ? 'bg-[#EDF3E0] ring-1 ring-[#C9F169]' : 'hover:bg-[#F6F7F2]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-gray-900">{item.farmerName}</p>
+                      <p className="truncate text-sm font-semibold text-[#10241A]">{item.farmerName}</p>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
                         {badge.label}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-gray-600">{item.topic}</p>
-                    <p className="mt-1 truncate text-xs text-gray-500">{item.lastMessage}</p>
-                    <p className="mt-1 text-[11px] text-gray-400">{formatTime(item.updatedAt)}</p>
+                    <p className="mt-0.5 truncate text-xs text-[#5C6B60]">{item.topic}</p>
+                    <p className="mt-1 truncate text-xs text-[#8A9A8E]">{item.lastMessage}</p>
+                    <p className="mt-1 text-[11px] text-[#8A9A8E]">{formatTime(item.updatedAt)}</p>
                   </button>
                 )
               })}
@@ -178,7 +178,7 @@ export function OfficerConsultationsPage() {
 
         <section className="flex min-h-[420px] flex-col lg:min-h-[70vh]">
           {threadLoading && activeId ? (
-            <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+            <div className="flex flex-1 items-center justify-center text-sm text-[#5C6B60]">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Opening thread
             </div>
@@ -197,8 +197,8 @@ export function OfficerConsultationsPage() {
               bottomRef={bottomRef}
             />
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-sm text-gray-500">
-              <MessageSquare className="mb-3 h-8 w-8 text-[#2d5f2e]" />
+            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-sm text-[#5C6B60]">
+              <MessageSquare className="mb-3 h-8 w-8 text-[#123524]" />
               Select a farmer thread to reply.
             </div>
           )}
@@ -230,33 +230,33 @@ function OfficerThread({
   const badge = officerBadge(thread.inbox)
   return (
     <>
-      <header className="border-b border-green-100 px-4 py-4">
+      <header className="border-b border-[#E6EADF] px-4 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-gray-900">{thread.farmerName}</h2>
+              <h2 className="text-base font-semibold text-[#10241A]">{thread.farmerName}</h2>
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
                 {badge.label}
               </span>
             </div>
-            <p className="mt-1 flex items-center gap-1 text-sm text-gray-600">
+            <p className="mt-1 flex items-center gap-1 text-sm text-[#5C6B60]">
               <MapPin className="h-3.5 w-3.5" />
               {thread.farmName ?? 'Farm'} · {thread.district}
             </p>
             {thread.farmerPhone ? (
-              <p className="mt-1 flex items-center gap-1 text-sm text-gray-600">
+              <p className="mt-1 flex items-center gap-1 text-sm text-[#5C6B60]">
                 <Phone className="h-3.5 w-3.5" />
                 {thread.farmerPhone}
               </p>
             ) : null}
-            <p className="mt-1 text-sm text-gray-700">{thread.topic}</p>
+            <p className="mt-1 text-sm text-[#10241A]">{thread.topic}</p>
           </div>
           {thread.status === 'open' ? (
             <button
               type="button"
               onClick={onResolve}
               disabled={resolving}
-              className="inline-flex items-center gap-1 rounded-full border border-green-200 px-3 py-1.5 text-xs font-semibold text-[#2d5f2e] hover:bg-green-50 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-full border border-[#E6EADF] px-3 py-1.5 text-xs font-semibold text-[#123524] hover:bg-[#F1F5EA] disabled:opacity-60"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               {resolving ? 'Closing...' : 'Mark resolved'}
@@ -264,14 +264,14 @@ function OfficerThread({
           ) : null}
         </div>
         {thread.reportLabel ? (
-          <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-xs text-[#1a2e1a]">
+          <p className="mt-3 rounded-xl bg-[#EDF3E0] px-3 py-2 text-xs text-[#0C281B]">
             Attached diagnosis: {thread.reportLabel}
             {thread.reportStatus ? ` · ${thread.reportStatus}` : ''}
           </p>
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#F6F7F2] p-4">
         {thread.messages.map((message) => {
           const mine = message.senderRole === 'officer'
           return (
@@ -279,15 +279,15 @@ function OfficerThread({
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   mine
-                    ? 'rounded-br-md bg-[#2d5f2e] text-white'
-                    : 'rounded-bl-md bg-white text-gray-900 shadow-sm'
+                    ? 'rounded-br-md bg-[#123524] text-white'
+                    : 'rounded-bl-md bg-white text-[#10241A] shadow-sm'
                 }`}
               >
-                <p className={`mb-1 text-[10px] font-bold uppercase tracking-wide ${mine ? 'text-green-100' : 'text-gray-500'}`}>
+                <p className={`mb-1 text-[10px] font-bold uppercase tracking-wide ${mine ? 'text-[#C9F169]' : 'text-[#5C6B60]'}`}>
                   {mine ? 'You' : thread.farmerName}
                 </p>
                 <p className="whitespace-pre-wrap">{message.content}</p>
-                <p className={`mt-1 text-[10px] ${mine ? 'text-white/70' : 'text-gray-400'}`}>
+                <p className={`mt-1 text-[10px] ${mine ? 'text-white/70' : 'text-[#8A9A8E]'}`}>
                   {formatTime(message.createdAt)}
                 </p>
               </div>
@@ -298,7 +298,7 @@ function OfficerThread({
       </div>
 
       <form
-        className="border-t border-green-100 bg-white p-3"
+        className="border-t border-[#E6EADF] bg-white p-3"
         onSubmit={(event) => {
           event.preventDefault()
           onReply()
@@ -314,12 +314,12 @@ function OfficerThread({
                 ? 'Send a follow-up to reopen this thread'
                 : 'Reply to the farmer'
             }
-            className="min-h-[44px] flex-1 resize-none rounded-2xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[#2d5f2e]"
+            className="min-h-[44px] flex-1 resize-none rounded-2xl border border-[#E6EADF] bg-[#F6F7F2] px-3 py-2.5 text-sm outline-none focus:border-[#123524] focus:bg-white"
           />
           <button
             type="submit"
             disabled={sending || !reply.trim()}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2d5f2e] text-white disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#123524] text-white disabled:opacity-50"
             aria-label="Send reply"
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

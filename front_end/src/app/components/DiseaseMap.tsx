@@ -296,10 +296,12 @@ export function DiseaseMap({
           <i className="h-2.5 w-2.5 rounded-full bg-[#3DA35D]" />
           Low
         </span>
-        <span className="flex items-center gap-1.5">
-          <i className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-[#123524] bg-[#C9F169]/70" />
-          {radiusKm} km warning
-        </span>
+        {farms.length > 0 ? (
+          <span className="flex items-center gap-1.5">
+            <i className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-[#123524] bg-[#C9F169]/70" />
+            {radiusKm} km warning
+          </span>
+        ) : null}
       </div>
     </div>
   )

@@ -1,33 +1,67 @@
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router'
-import {
-  Bell,
-  ClipboardList,
-  LogOut,
-  Mail,
-  MapPin,
-  MessageSquare,
-  Phone,
-  Shield,
-} from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
-import { CocoCareLogo } from '@/app/components/CocoCareLogo'
-import { notificationsApi } from '@/api/services'
+import { notificationsApi, officerConsultationsApi, reportsApi } from '@/api/services'
+import {
+  DesktopHeader,
+  MobileHeader,
+  MobileNotificationsSheet,
+} from '@/app/components/layout'
+import { OfficerSidebar } from '@/app/components/officer/OfficerSidebar'
+import { OfficerMobileNav } from '@/app/components/officer/OfficerMobileNav'
+import { OfficerMobileProfileSheet } from '@/app/components/officer/OfficerMobileProfileSheet'
 
 export function OfficerLayout() {
+  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const [collapsed, setCollapsed] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileProfileSheetOpen, setMobileProfileSheetOpen] = useState(false)
+  const [mobileNotificationsSheetOpen, setMobileNotificationsSheetOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isScrolled, setIsScrolled] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
+  const assignedRegion = user?.assignedRegion?.trim()
 
   const { data: inbox } = useQuery({
     queryKey: ['notifications', 'inbox'],
     queryFn: notificationsApi.list,
     refetchInterval: 20_000,
   })
+  const notifications = inbox?.items ?? []
   const unreadCount = inbox?.unreadCount ?? 0
+
+  const { data: pendingReports = [] } = useQuery({
+    queryKey: ['officer', 'pending-reports'],
+    queryFn: reportsApi.pending,
+    enabled: Boolean(assignedRegion),
+    refetchInterval: 30_000,
+  })
+
+  const { data: threads = [] } = useQuery({
+    queryKey: ['officer', 'consultations'],
+    queryFn: officerConsultationsApi.list,
+    enabled: Boolean(assignedRegion),
+    refetchInterval: 20_000,
+  })
+
+  const markReadMutation = useMutation({
+    mutationFn: notificationsApi.markRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+  const dismissMutation = useMutation({
+    mutationFn: notificationsApi.dismiss,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+  const markAllMutation = useMutation({
+    mutationFn: notificationsApi.markAllRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+
   const initials = (user?.name ?? 'O')
     .split(' ')
     .map((n) => n[0])
@@ -35,8 +69,11 @@ export function OfficerLayout() {
     .slice(0, 2)
     .toUpperCase()
 
+  const displayName = user?.name
+    ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]?.[0] ? `${user.name.split(' ')[1][0]}.` : ''}`
+    : 'Officer'
+
   const handleLogout = () => {
-    setProfileOpen(false)
     logout()
     navigate('/login')
   }
@@ -53,162 +90,99 @@ export function OfficerLayout() {
 
   useEffect(() => {
     setProfileOpen(false)
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0
+      setIsScrolled(false)
+    }
   }, [location.pathname])
 
+  const needsReplyCount = threads.filter((item) => item.inbox === 'needs_reply').length
+  const fullBleed = location.pathname.startsWith('/officer/consultations')
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50/80 via-gray-50 to-gray-100">
-      <header className="sticky top-0 z-30 border-b border-green-100/80 bg-white/90 backdrop-blur-md shadow-sm">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
-            <Link to="/officer/reports" className="flex shrink-0 items-center gap-2 hover:opacity-90 transition-opacity">
-              <CocoCareLogo iconClassName="h-8 w-auto max-w-[120px] object-contain" />
-              <span className="hidden text-lg font-semibold text-[#2d5f2e] sm:inline">Officer</span>
-            </Link>
-            {user?.assignedRegion ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-[#2d5f2e]">
-                <MapPin className="h-3 w-3" />
-                {user.assignedRegion}
-              </span>
-            ) : null}
-            <nav className="ml-1 flex min-w-0 items-center gap-1 overflow-x-auto">
-              <Link
-                to="/officer/reports"
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  location.pathname.startsWith('/officer/reports')
-                    ? 'bg-[#2d5f2e] text-white'
-                    : 'text-gray-600 hover:bg-green-50'
-                }`}
-              >
-                <ClipboardList className="h-4 w-4" />
-                Reports
-              </Link>
-              <Link
-                to="/officer/consultations"
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  location.pathname.startsWith('/officer/consultations')
-                    ? 'bg-[#2d5f2e] text-white'
-                    : 'text-gray-600 hover:bg-green-50'
-                }`}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Consultations
-              </Link>
-              <Link
-                to="/officer/notifications"
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  location.pathname.startsWith('/officer/notifications')
-                    ? 'bg-[#2d5f2e] text-white'
-                    : 'text-gray-600 hover:bg-green-50'
-                }`}
-              >
-                <Bell className="h-4 w-4" />
-                Inbox
-                {unreadCount > 0 ? (
-                  <span className="min-w-[1.1rem] rounded-full bg-[#E5484D] px-1.5 text-[10px] font-bold text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                ) : null}
-              </Link>
-            </nav>
-          </div>
+    <div className="flex h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#F6F7F2]">
+      <OfficerSidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        profileOpen={profileOpen}
+        setProfileOpen={setProfileOpen}
+        profileRef={profileRef}
+        user={user}
+        displayName={displayName}
+        initials={initials}
+        unreadCount={unreadCount}
+        pendingCount={pendingReports.length}
+        needsReplyCount={needsReplyCount}
+        handleLogout={handleLogout}
+        locationPath={location.pathname}
+      />
 
-          <div className="flex items-center gap-2">
-            <Link
-              to="/officer/notifications"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-white text-[#2d5f2e] hover:bg-green-50"
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              {unreadCount > 0 ? (
-                <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E5484D] px-1 text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              ) : null}
-            </Link>
-            <div className="relative shrink-0" ref={profileRef}>
-            <button
-              type="button"
-              onClick={() => setProfileOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-full border border-transparent p-1.5 pr-3 transition-all hover:border-green-100 hover:bg-green-50"
-              aria-expanded={profileOpen}
-              aria-haspopup="true"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#2d5f2e] to-[#1a2e1a] text-sm font-medium text-white">
-                {initials}
-              </div>
-              <span className="hidden max-w-[8rem] truncate text-sm font-medium text-gray-800 sm:block">
-                {user?.name}
-              </span>
-            </button>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <MobileHeader
+          locationPath={location.pathname}
+          homeHref="/officer"
+          farmName={user?.assignedRegion?.trim() || 'Officer desk'}
+          unreadAlertsCount={unreadCount}
+          initials={initials}
+          onOpenProfile={() => setMobileProfileSheetOpen(true)}
+          onOpenNotifications={() => setMobileNotificationsSheetOpen(true)}
+        />
 
-            <div
-              className={`absolute right-0 top-full z-50 mt-2 w-72 origin-top-right rounded-2xl border border-green-100 bg-white shadow-xl transition-all duration-200 ${
-                profileOpen
-                  ? 'pointer-events-auto scale-100 opacity-100'
-                  : 'pointer-events-none scale-95 opacity-0'
-              }`}
-            >
-              <div className="border-b border-gray-100 p-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2d5f2e] to-[#1a2e1a] text-white">
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-gray-900">{user?.name}</div>
-                    <div className="text-xs capitalize text-gray-500">
-                      @{user?.username} · {user?.role}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <DesktopHeader
+          isScrolled={isScrolled}
+          unreadAlertsCount={unreadCount}
+          initials={initials}
+          userName={user?.name}
+          notifications={notifications}
+          notificationsHref="/officer/notifications"
+          profileHref="/officer/settings"
+          onMarkRead={(item) => {
+            if (!item.read) markReadMutation.mutate(item.id)
+          }}
+          onMarkAllRead={() => markAllMutation.mutateAsync()}
+        />
 
-              <div className="space-y-2 p-4 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Shield className="h-4 w-4 shrink-0 text-[#2d5f2e]" />
-                  <span className="capitalize">{user?.role} account</span>
-                </div>
-                {user?.assignedRegion ? (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="h-4 w-4 shrink-0 text-[#2d5f2e]" />
-                    Assigned region: {user.assignedRegion}
-                  </div>
-                ) : (
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">
-                    No region assigned — contact admin to review reports.
-                  </p>
-                )}
-                {user?.phone ? (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Phone className="h-4 w-4 shrink-0 text-[#2d5f2e]" />
-                    {user.phone}
-                  </div>
-                ) : null}
-                {user?.email ? (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail className="h-4 w-4 shrink-0 text-[#2d5f2e]" />
-                    <span className="truncate">{user.email}</span>
-                  </div>
-                ) : null}
-              </div>
+        <main
+          ref={mainRef}
+          onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 10)}
+          className={`relative flex-1 ${
+            fullBleed
+              ? 'p-0 pb-[74px] overflow-hidden flex flex-col lg:p-6 lg:pb-6 lg:block'
+              : 'overflow-y-auto overflow-x-hidden p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-4 lg:p-6 lg:pb-6'
+          }`}
+        >
+          <Outlet />
+        </main>
+      </div>
 
-              <div className="border-t border-gray-100 p-3">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </button>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <Outlet />
-      </main>
+      <OfficerMobileNav locationPath={location.pathname} />
+
+      <OfficerMobileProfileSheet
+        isOpen={mobileProfileSheetOpen}
+        onClose={() => setMobileProfileSheetOpen(false)}
+        userName={user?.name}
+        region={user?.assignedRegion?.trim() || 'No region assigned'}
+        pendingCount={pendingReports.length}
+        needsReplyCount={needsReplyCount}
+        unreadCount={unreadCount}
+        initials={initials}
+        handleLogout={handleLogout}
+      />
+
+      <MobileNotificationsSheet
+        isOpen={mobileNotificationsSheetOpen}
+        onClose={() => setMobileNotificationsSheetOpen(false)}
+        notifications={notifications}
+        unreadAlertsCount={unreadCount}
+        inboxHref="/officer/notifications"
+        onMarkRead={(item) => {
+          if (!item.read) markReadMutation.mutate(item.id)
+        }}
+        onMarkAllRead={() => markAllMutation.mutateAsync()}
+        onDismiss={(item) => dismissMutation.mutate(item.id)}
+      />
     </div>
   )
 }

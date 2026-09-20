@@ -1,7 +1,8 @@
 import { AlertTriangle, Filter, Loader2, MapPin, ShieldAlert, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { diseaseMapApi, farmApi } from '@/api/services'
+import { useAuth } from '@/contexts/AuthContext'
 import { DiseaseMap, pointKey, threatColor, threatFromWeight } from '@/app/components/DiseaseMap'
 import {
   applyHeatmapFilters,
@@ -22,6 +23,8 @@ function verificationLabel(status: HeatmapPoint['verificationStatus']) {
 }
 
 export function DiseaseHeatmap() {
+  const { user } = useAuth()
+  const isOfficer = user?.role === 'officer'
   const [diseaseFilter, setDiseaseFilter] = useState('')
   const [districtFilter, setDistrictFilter] = useState('')
   const [minWeight, setMinWeight] = useState<number | undefined>(undefined)
@@ -29,10 +32,12 @@ export function DiseaseHeatmap() {
   const [toDate, setToDate] = useState('')
   const [focusedPoint, setFocusedPoint] = useState<HeatmapPoint | null>(null)
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
+  const prefilledRegion = useRef(false)
 
   const { data: profile } = useQuery({
     queryKey: ['farmer', 'profile'],
     queryFn: farmApi.profile,
+    enabled: !isOfficer,
   })
 
   const selectedFarmId = useMemo(() => {
@@ -70,7 +75,16 @@ export function DiseaseHeatmap() {
   const { data: nearby } = useQuery({
     queryKey: ['disease-map', 'nearby', selectedFarmId],
     queryFn: () => diseaseMapApi.nearby(25),
+    enabled: !isOfficer,
   })
+
+  useEffect(() => {
+    if (prefilledRegion.current) return
+    const region = user?.assignedRegion?.trim()
+    if (!isOfficer || !region) return
+    setDistrictFilter(region)
+    prefilledRegion.current = true
+  }, [isOfficer, user?.assignedRegion])
 
   const heatmap = useMemo(
     () => applyHeatmapFilters(heatmapAll, filterState),
@@ -147,7 +161,9 @@ export function DiseaseHeatmap() {
           Disease Heatmap & Risk Monitoring
         </h1>
         <p className="text-sm text-[#5C6B60] sm:text-base">
-          Identify coconut diseases, threat level, and outbreaks inside a {radiusKm} km radius of your farm.
+          {isOfficer
+            ? 'Verified and suspected coconut outbreaks across Sri Lanka. Filter to your district when you need a local view.'
+            : `Identify coconut diseases, threat level, and outbreaks inside a ${radiusKm} km radius of your farm.`}
         </p>
       </div>
 
@@ -289,7 +305,9 @@ export function DiseaseHeatmap() {
                 Sri Lanka disease distribution
               </h2>
               <p className="text-xs text-[#5C6B60]">
-                Heat intensity follows confidence. Lime ring is your {radiusKm} km watch zone.
+                {isOfficer
+                  ? 'Heat intensity follows confidence. Red is officer-verified; amber is still under review.'
+                  : `Heat intensity follows confidence. Lime ring is your ${radiusKm} km watch zone.`}
               </p>
             </div>
             {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-[#123524]" /> : null}
@@ -297,16 +315,30 @@ export function DiseaseHeatmap() {
           <DiseaseMap
             points={heatmap}
             focusedPoint={focusedPoint}
-            farms={watchFarms}
-            radiusKm={radiusKm}
-            nearbyReportIds={nearbyReportIds}
-            nearbyClusterKeys={nearbyClusterKeys}
+            farms={isOfficer ? [] : watchFarms}
+            radiusKm={isOfficer ? undefined : radiusKm}
+            nearbyReportIds={isOfficer ? new Set() : nearbyReportIds}
+            nearbyClusterKeys={isOfficer ? new Set() : nearbyClusterKeys}
             selectedDistrict={districtFilter || null}
             onSelectPoint={focusOutbreak}
           />
         </div>
 
         <div className="space-y-4">
+          {isOfficer ? (
+            <div className="rounded-2xl bg-gradient-to-br from-[#123524] to-[#1B4332] p-5 text-white shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-white/80">
+                <ShieldAlert className="h-4 w-4" />
+                District desk
+              </div>
+              <div className="mb-1 text-3xl font-bold">{heatmap.length}</div>
+              <p className="text-sm text-white/85">
+                {districtFilter
+                  ? `Mapped outbreaks currently shown for ${districtFilter}.`
+                  : 'Island-wide outbreaks. Filter to your assigned district when you need a local view.'}
+              </p>
+            </div>
+          ) : (
           <div
             className={`rounded-2xl p-5 text-white shadow-sm ${
               nearbyOutbreaks.length > 0
@@ -327,6 +359,7 @@ export function DiseaseHeatmap() {
                   : `No mapped outbreaks inside ${radiusKm} km of your farm.`}
             </p>
           </div>
+          )}
 
           <div className="rounded-2xl border border-[#E6EADF] bg-white p-5 shadow-sm">
             <h3 className="mb-1 font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
@@ -359,8 +392,9 @@ export function DiseaseHeatmap() {
                     point={point}
                     selected={pointKey(point) === focusedKey}
                     inWatchZone={
-                      Boolean(point.reportId && nearbyReportIds.has(point.reportId)) ||
-                      nearbyClusterKeys.has(`${point.farmId ?? ''}:${point.diseaseType}`)
+                      !isOfficer &&
+                      (Boolean(point.reportId && nearbyReportIds.has(point.reportId)) ||
+                        nearbyClusterKeys.has(`${point.farmId ?? ''}:${point.diseaseType}`))
                     }
                     onSelect={() => focusOutbreak(point)}
                   />
@@ -371,6 +405,7 @@ export function DiseaseHeatmap() {
         </div>
       </div>
 
+      {isOfficer ? null : (
       <div className="rounded-2xl border border-[#E6EADF] bg-white p-4 shadow-sm sm:p-6">
         <h2 className="mb-4 font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
           Nearby outbreak alerts · {radiusKm} km
@@ -417,6 +452,7 @@ export function DiseaseHeatmap() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

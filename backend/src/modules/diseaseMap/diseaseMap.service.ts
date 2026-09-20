@@ -11,6 +11,7 @@ import { listFarmsByUserId } from '../auth/auth.repository.js'
 import {
   aggregateHeatmapPoints,
   listAlertsForFarmer,
+  listFarmsForAlerts,
   listOutbreakRows,
   markAlertRead,
   markAllAlertsRead,
@@ -21,6 +22,12 @@ import { haversineKm, threatLevel, toPublicHeatmapPoint } from './threat.js'
 
 export function assertFarmer(role: string) {
   if (role !== 'farmer') throw forbidden('Farmer access required')
+}
+
+export function assertHeatmapViewer(role: string) {
+  if (role !== 'farmer' && role !== 'officer' && role !== 'admin') {
+    throw forbidden('Sign in to view the outbreak map')
+  }
 }
 
 export async function getHeatmap(filters: HeatmapQuery): Promise<HeatmapPoint[]> {
@@ -147,4 +154,33 @@ export async function readAlert(userId: string, alertId: string) {
 
 export async function readAllAlerts(userId: string) {
   await markAllAlertsRead(userId)
+}
+
+export async function notifyNearbyOfVerifiedReport(reportId: string) {
+  const rows = await listOutbreakRows({})
+  const source = rows.find((row) => row.id === reportId)
+  if (!source) return
+
+  const radiusKm = env.diseaseAlertRadiusKm
+  const farms = await listFarmsForAlerts()
+  const createdAt = source.createdAt.toISOString()
+
+  for (const farm of farms) {
+    if (farm.id === source.farmId) continue
+    if (!Number.isFinite(farm.lat) || !Number.isFinite(farm.lng)) continue
+    const distanceKm =
+      Math.round(haversineKm({ lat: farm.lat, lng: farm.lng }, { lat: source.lat, lng: source.lng }) * 10) /
+      10
+    if (distanceKm > radiusKm) continue
+    await upsertAlert({
+      reportId: source.id,
+      farmerUserId: farm.userId,
+      farmId: farm.id,
+      diseaseType: source.diseaseType,
+      distanceKm,
+      alertType: 'verified',
+      createdAt,
+      message: `Verified ${source.diseaseType} is ${distanceKm} km from ${farm.name} (within your ${radiusKm} km watch zone).`,
+    })
+  }
 }

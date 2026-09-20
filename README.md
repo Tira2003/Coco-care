@@ -298,13 +298,12 @@ Coco-care/
 
 ## Demo Accounts
 
-All seeded demo users share the password: `password`
+Farmers and officers sign in on the same `/login` screen with their NIC.
 
-| Username | Role |
-|----------|------|
-| `akeel` | Farmer |
-| `officer1` | Officer |
-| `admin` | Admin |
+| NIC | Role | Password |
+|----------|------|----------|
+| `199012345679` | Farmer | `password2` |
+| `198812345670` | Officer | `password` |
 
 ---
 

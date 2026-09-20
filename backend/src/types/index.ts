@@ -147,6 +147,22 @@ export interface DiseaseReport {
   farmId: string
   farmName: string
   region: string
+  farmer?: {
+    id: string
+    name: string
+    username: string
+    email?: string | null
+    phone?: string | null
+  }
+  farm?: {
+    id: string
+    name: string
+    location: string
+    latitude: number
+    longitude: number
+    acreage: number
+    treeCount: number
+  }
   imageUrl?: string
   symptoms?: Record<string, string | boolean>
   imageResult?: string
