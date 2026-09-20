@@ -9,6 +9,7 @@ router.post('/api/consultations', requireAuth, consultationsController.createMin
 router.get('/api/consultations/:id', requireAuth, consultationsController.getMine)
 router.post('/api/consultations/:id/messages', requireAuth, consultationsController.replyMine)
 router.post('/api/consultations/:id/resolve', requireAuth, consultationsController.resolveMine)
+router.delete('/api/consultations/:id', requireAuth, consultationsController.deleteMine)
 
 router.get('/api/officer/consultations', requireAuth, consultationsController.listInbox)
 router.get('/api/officer/consultations/:id', requireAuth, consultationsController.getInbox)
@@ -22,5 +23,6 @@ router.post(
   requireAuth,
   consultationsController.resolveInbox,
 )
+router.delete('/api/officer/consultations/:id', requireAuth, consultationsController.deleteInbox)
 
 export default router

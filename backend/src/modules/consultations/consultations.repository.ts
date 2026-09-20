@@ -21,6 +21,7 @@ export interface ConsultationRow {
   report_label: string | null
   report_status: string | null
   last_message: string | null
+  last_attachments?: unknown
 }
 
 export interface ConsultationMessageRow {
@@ -29,6 +30,7 @@ export interface ConsultationMessageRow {
   sender_role: LastSender
   sender_user_id: string
   content: string
+  attachments: unknown
   created_at: Date
 }
 
@@ -68,14 +70,15 @@ const LIST_SELECT = `
     o.name AS officer_name,
     r.final_result AS report_label,
     r.status AS report_status,
-    m.content AS last_message
+    m.content AS last_message,
+    m.attachments AS last_attachments
   FROM officer_consultations c
   JOIN farmers fa ON fa.id = c.farmer_user_id
   LEFT JOIN farms f ON f.id = c.farm_id
   LEFT JOIN officers o ON o.id = c.officer_user_id
   LEFT JOIN disease_reports r ON r.id = c.report_id
   LEFT JOIN LATERAL (
-    SELECT content
+    SELECT content, attachments
     FROM officer_consultation_messages
     WHERE consultation_id = c.id
     ORDER BY created_at DESC
@@ -127,6 +130,10 @@ async function createSchema() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS officer_consultation_messages_thread_idx
       ON officer_consultation_messages (consultation_id, created_at)
+  `)
+  await pool.query(`
+    ALTER TABLE officer_consultation_messages
+      ADD COLUMN IF NOT EXISTS attachments jsonb NOT NULL DEFAULT '[]'::jsonb
   `)
 }
 
@@ -181,6 +188,7 @@ export async function insertConsultation(input: {
   district: string
   topic: string
   message: string
+  attachments?: unknown
 }) {
   const client = await pool.connect()
   try {
@@ -203,10 +211,10 @@ export async function insertConsultation(input: {
     const id = created.rows[0]!.id
     await client.query(
       `INSERT INTO officer_consultation_messages (
-         consultation_id, sender_role, sender_user_id, content
+         consultation_id, sender_role, sender_user_id, content, attachments
        )
-       VALUES ($1, 'farmer', $2, $3)`,
-      [id, input.farmerUserId, input.message],
+       VALUES ($1, 'farmer', $2, $3, $4::jsonb)`,
+      [id, input.farmerUserId, input.message, JSON.stringify(input.attachments ?? [])],
     )
     await client.query('COMMIT')
     return id
@@ -256,7 +264,7 @@ export async function getConsultationById(id: string) {
 
 export async function listMessages(consultationId: string) {
   const result = await pool.query<ConsultationMessageRow>(
-    `SELECT id, consultation_id, sender_role, sender_user_id, content, created_at
+    `SELECT id, consultation_id, sender_role, sender_user_id, content, attachments, created_at
      FROM officer_consultation_messages
      WHERE consultation_id = $1
      ORDER BY created_at ASC`,
@@ -270,6 +278,7 @@ export async function insertReply(input: {
   senderRole: LastSender
   senderUserId: string
   content: string
+  attachments?: unknown
   officerUserId?: string | null
 }) {
   const client = await pool.connect()
@@ -277,10 +286,16 @@ export async function insertReply(input: {
     await client.query('BEGIN')
     await client.query(
       `INSERT INTO officer_consultation_messages (
-         consultation_id, sender_role, sender_user_id, content
+         consultation_id, sender_role, sender_user_id, content, attachments
        )
-       VALUES ($1, $2, $3, $4)`,
-      [input.consultationId, input.senderRole, input.senderUserId, input.content],
+       VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      [
+        input.consultationId,
+        input.senderRole,
+        input.senderUserId,
+        input.content,
+        JSON.stringify(input.attachments ?? []),
+      ],
     )
     await client.query(
       `UPDATE officer_consultations
@@ -310,4 +325,8 @@ export async function markResolved(consultationId: string) {
      WHERE id = $1`,
     [consultationId],
   )
+}
+
+export async function deleteConsultation(consultationId: string) {
+  await pool.query(`DELETE FROM officer_consultations WHERE id = $1`, [consultationId])
 }

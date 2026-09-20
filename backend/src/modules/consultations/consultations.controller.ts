@@ -9,6 +9,8 @@ import {
   assertFarmer,
   assertOfficer,
   createFarmerConsultation,
+  deleteAsFarmer,
+  deleteAsOfficer,
   getFarmerConsultation,
   getOfficerConsultation,
   listFarmerConsultations,
@@ -50,12 +52,18 @@ export const createMine = asyncHandler(async (req: Request, res: Response) => {
 export const replyMine = asyncHandler(async (req: Request, res: Response) => {
   const user = farmer(req)
   const input = consultationMessageSchema.parse(req.body)
-  res.status(201).json(await replyAsFarmer(user.id, String(req.params.id), input.content))
+  res.status(201).json(await replyAsFarmer(user.id, String(req.params.id), input))
 })
 
 export const resolveMine = asyncHandler(async (req: Request, res: Response) => {
   const user = farmer(req)
   res.json(await resolveAsFarmer(user.id, String(req.params.id)))
+})
+
+export const deleteMine = asyncHandler(async (req: Request, res: Response) => {
+  const user = farmer(req)
+  await deleteAsFarmer(user.id, String(req.params.id))
+  res.status(204).send()
 })
 
 export const listInbox = asyncHandler(async (req: Request, res: Response) => {
@@ -72,11 +80,17 @@ export const replyInbox = asyncHandler(async (req: Request, res: Response) => {
   const user = officer(req)
   const input = consultationMessageSchema.parse(req.body)
   res.status(201).json(
-    await replyAsOfficer(user.id, user.assignedRegion, String(req.params.id), input.content),
+    await replyAsOfficer(user.id, user.assignedRegion, String(req.params.id), input),
   )
 })
 
 export const resolveInbox = asyncHandler(async (req: Request, res: Response) => {
   const user = officer(req)
   res.json(await resolveAsOfficer(user.id, user.assignedRegion, String(req.params.id)))
+})
+
+export const deleteInbox = asyncHandler(async (req: Request, res: Response) => {
+  const user = officer(req)
+  await deleteAsOfficer(user.id, user.assignedRegion, String(req.params.id))
+  res.status(204).send()
 })

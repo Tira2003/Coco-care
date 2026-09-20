@@ -12,6 +12,7 @@ import type {
   DiseaseMapStats,
   ChatMessage,
   ChatConversation,
+  ConsultationAttachment,
   ConsultationSummary,
   ConsultationThread,
   CreateConsultationPayload,
@@ -197,19 +198,28 @@ export const consultationsApi = {
     return data
   },
   create: async (payload: CreateConsultationPayload) => {
-    const { data } = await apiClient.post<ConsultationThread>('/api/consultations', payload)
+    const { data } = await apiClient.post<ConsultationThread>('/api/consultations', payload, {
+      timeout: 60_000,
+    })
     return data
   },
-  reply: async (id: string, content: string) => {
+  reply: async (
+    id: string,
+    payload: { content: string; attachments?: ConsultationAttachment[] },
+  ) => {
     const { data } = await apiClient.post<ConsultationThread>(
       `/api/consultations/${id}/messages`,
-      { content },
+      payload,
+      { timeout: 60_000 },
     )
     return data
   },
   resolve: async (id: string) => {
     const { data } = await apiClient.post<ConsultationThread>(`/api/consultations/${id}/resolve`)
     return data
+  },
+  remove: async (id: string) => {
+    await apiClient.delete(`/api/consultations/${id}`)
   },
 }
 
@@ -222,10 +232,14 @@ export const officerConsultationsApi = {
     const { data } = await apiClient.get<ConsultationThread>(`/api/officer/consultations/${id}`)
     return data
   },
-  reply: async (id: string, content: string) => {
+  reply: async (
+    id: string,
+    payload: { content: string; attachments?: ConsultationAttachment[] },
+  ) => {
     const { data } = await apiClient.post<ConsultationThread>(
       `/api/officer/consultations/${id}/messages`,
-      { content },
+      payload,
+      { timeout: 60_000 },
     )
     return data
   },
@@ -234,6 +248,9 @@ export const officerConsultationsApi = {
       `/api/officer/consultations/${id}/resolve`,
     )
     return data
+  },
+  remove: async (id: string) => {
+    await apiClient.delete(`/api/officer/consultations/${id}`)
   },
 }
 

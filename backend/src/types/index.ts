@@ -209,6 +209,14 @@ export interface BroadcastNotification {
 export type ConsultationStatus = 'open' | 'resolved'
 export type ConsultationSender = 'farmer' | 'officer'
 export type ConsultationInbox = 'needs_reply' | 'waiting' | 'resolved'
+export type ConsultationMediaKind = 'image' | 'video' | 'voice'
+
+export interface ConsultationAttachment {
+  kind: ConsultationMediaKind
+  url: string
+  name: string
+  mime: string
+}
 
 export interface ConsultationMessage {
   id: string
@@ -216,6 +224,7 @@ export interface ConsultationMessage {
   senderRole: ConsultationSender
   senderUserId: string
   content: string
+  attachments: ConsultationAttachment[]
   createdAt: string
 }
 

@@ -163,7 +163,7 @@ export function DashboardLayout() {
           className={`relative flex-1 ${
             location.pathname.startsWith('/app/chatbot') ||
             location.pathname.startsWith('/app/consultations')
-              ? 'p-0 pb-[74px] overflow-hidden flex flex-col lg:p-6 lg:pb-6 lg:block'
+              ? 'p-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] overflow-hidden flex flex-col lg:p-6 lg:pb-6 lg:block'
               : 'overflow-y-auto overflow-x-hidden p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-4 lg:p-6 lg:pb-6'
           }`}
         >

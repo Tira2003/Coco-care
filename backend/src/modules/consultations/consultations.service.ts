@@ -1,12 +1,14 @@
 import { badRequest, forbidden, notFound } from '../../utils/errors.js'
 import { findFarmByIdForUser, listFarmsByUserId } from '../auth/auth.repository.js'
 import type {
+  ConsultationAttachment,
   ConsultationMessage,
   ConsultationSummary,
   ConsultationThread,
 } from '../../types/index.js'
-import type { CreateConsultationInput } from './consultations.schemas.js'
+import type { ConsultationMessageInput, CreateConsultationInput } from './consultations.schemas.js'
 import {
+  deleteConsultation,
   ensureConsultationSchema,
   findOwnedReport,
   getConsultationById,
@@ -34,10 +36,47 @@ export function assertOfficer(role: string) {
   if (role !== 'officer') throw forbidden('Officer access required')
 }
 
-function preview(text: string | null) {
-  if (!text) return ''
-  const compact = text.replace(/\s+/g, ' ').trim()
-  return compact.length <= 90 ? compact : `${compact.slice(0, 87).trim()}...`
+function preview(text: string | null, attachments: ConsultationAttachment[] = []) {
+  if (text?.trim()) {
+    const compact = text.replace(/\s+/g, ' ').trim()
+    return compact.length <= 90 ? compact : `${compact.slice(0, 87).trim()}...`
+  }
+  if (attachments.some((item) => item.kind === 'voice')) return 'Sent a voice note'
+  if (attachments.some((item) => item.kind === 'video')) return 'Sent a video'
+  if (attachments.length > 0) return 'Sent a photo'
+  return ''
+}
+
+function parseAttachments(value: unknown): ConsultationAttachment[] {
+  let raw: unknown = value
+  if (typeof value === 'string') {
+    try {
+      raw = JSON.parse(value)
+    } catch {
+      return []
+    }
+  }
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const row = item as Record<string, unknown>
+    if (
+      (row.kind !== 'image' && row.kind !== 'video' && row.kind !== 'voice') ||
+      typeof row.url !== 'string'
+    ) {
+      return []
+    }
+    const fallbackMime =
+      row.kind === 'voice' ? 'audio/webm' : row.kind === 'video' ? 'video/mp4' : 'image/jpeg'
+    return [
+      {
+        kind: row.kind,
+        url: row.url,
+        name: typeof row.name === 'string' && row.name.trim() ? row.name : 'attachment',
+        mime: typeof row.mime === 'string' ? row.mime : fallbackMime,
+      },
+    ]
+  })
 }
 
 function mapSummary(row: ConsultationRow): ConsultationSummary {
@@ -54,7 +93,7 @@ function mapSummary(row: ConsultationRow): ConsultationSummary {
     reportLabel: row.report_label ?? undefined,
     farmerName: row.farmer_name,
     officerName: row.officer_name ?? undefined,
-    lastMessage: preview(row.last_message),
+    lastMessage: preview(row.last_message, parseAttachments(row.last_attachments)),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   }
@@ -66,6 +105,7 @@ function mapMessage(row: {
   sender_role: LastSender
   sender_user_id: string
   content: string
+  attachments?: unknown
   created_at: Date
 }): ConsultationMessage {
   return {
@@ -74,6 +114,7 @@ function mapMessage(row: {
     senderRole: row.sender_role,
     senderUserId: row.sender_user_id,
     content: row.content,
+    attachments: parseAttachments(row.attachments),
     createdAt: row.created_at.toISOString(),
   }
 }
@@ -195,19 +236,25 @@ export async function createFarmerConsultation(
     reportId,
     district,
     topic: input.topic,
-    message: input.message,
+    message: input.message.trim(),
+    attachments: input.attachments,
   })
   return getFarmerConsultation(farmerUserId, id)
 }
 
-export async function replyAsFarmer(farmerUserId: string, id: string, content: string) {
+export async function replyAsFarmer(
+  farmerUserId: string,
+  id: string,
+  input: ConsultationMessageInput,
+) {
   await ensureConsultationSchema()
   await loadForFarmer(farmerUserId, id)
   await insertReply({
     consultationId: id,
     senderRole: 'farmer',
     senderUserId: farmerUserId,
-    content,
+    content: input.content.trim(),
+    attachments: input.attachments,
   })
   return getFarmerConsultation(farmerUserId, id)
 }
@@ -216,7 +263,7 @@ export async function replyAsOfficer(
   officerUserId: string,
   assignedRegion: string | null | undefined,
   id: string,
-  content: string,
+  input: ConsultationMessageInput,
 ) {
   await ensureConsultationSchema()
   if (!assignedRegion?.trim()) throw forbidden('No region assigned')
@@ -225,7 +272,8 @@ export async function replyAsOfficer(
     consultationId: id,
     senderRole: 'officer',
     senderUserId: officerUserId,
-    content,
+    content: input.content.trim(),
+    attachments: input.attachments,
     officerUserId,
   })
   return getOfficerConsultation(officerUserId, assignedRegion, id)
@@ -248,4 +296,21 @@ export async function resolveAsOfficer(
   await loadForOfficer(officerUserId, assignedRegion, id)
   await markResolved(id)
   return getOfficerConsultation(officerUserId, assignedRegion, id)
+}
+
+export async function deleteAsFarmer(farmerUserId: string, id: string) {
+  await ensureConsultationSchema()
+  await loadForFarmer(farmerUserId, id)
+  await deleteConsultation(id)
+}
+
+export async function deleteAsOfficer(
+  officerUserId: string,
+  assignedRegion: string | null | undefined,
+  id: string,
+) {
+  await ensureConsultationSchema()
+  if (!assignedRegion?.trim()) throw forbidden('No region assigned')
+  await loadForOfficer(officerUserId, assignedRegion, id)
+  await deleteConsultation(id)
 }
