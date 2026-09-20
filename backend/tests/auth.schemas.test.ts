@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema } from '../src/modules/auth/auth.schemas.js'
+import { loginSchema, registerSchema, updateProfileSchema } from '../src/modules/auth/auth.schemas.js'
 
 describe('auth schemas', () => {
   it('accepts a login payload', () => {
@@ -32,5 +32,26 @@ describe('auth schemas', () => {
         phone: '0771234567',
       }),
     ).toThrow()
+  })
+
+  it('accepts a profile update payload', () => {
+    const parsed = updateProfileSchema.parse({
+      name: 'Sadeepa Lakshan',
+      email: 'sadeepal319@gmail.com',
+      phone: '+94766668450',
+    })
+    expect(parsed.name).toBe('Sadeepa Lakshan')
+    expect(parsed.email).toBe('sadeepal319@gmail.com')
+    expect(parsed.phone).toBe('+94766668450')
+  })
+
+  it('treats blank email and phone as null', () => {
+    const parsed = updateProfileSchema.parse({
+      name: 'Sadeepa Lakshan',
+      email: '  ',
+      phone: '',
+    })
+    expect(parsed.email).toBeNull()
+    expect(parsed.phone).toBeNull()
   })
 })

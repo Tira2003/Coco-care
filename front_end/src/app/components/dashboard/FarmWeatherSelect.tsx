@@ -55,6 +55,7 @@ export function FarmWeatherSelect({
         {farms.map((farm) => (
           <option key={farm.id} value={farm.id} className="text-[#10241A]">
             {farm.name} · {farm.location}
+            {farm.isPrimary ? ' (Primary)' : ''}
           </option>
         ))}
       </select>

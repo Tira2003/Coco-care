@@ -23,7 +23,7 @@ const PIN_ZOOM = 14
 
 const farmPinIcon = L.divIcon({
   className: '',
-  html: `<div style="width:22px;height:22px;background:#2d5f2e;border:3px solid #1a2e1a;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+  html: `<div style="width:22px;height:22px;background:#123524;border:3px solid #C9F169;border-radius:50%;box-shadow:0 2px 8px rgba(16,36,26,0.28);"></div>`,
   iconSize: [22, 22],
   iconAnchor: [11, 11],
 })
@@ -165,12 +165,12 @@ export function FarmLocationPicker({ value, onChange }: FarmLocationPickerProps)
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-gray-600">Farm location</span>
+        <span className="text-sm font-semibold text-[#10241A]">Farm location</span>
         <button
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={gpsLoading}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#2d5f2e] border border-[#2d5f2e]/40 rounded-lg hover:bg-green-50 disabled:opacity-60 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#E6EADF] bg-white px-3 py-1.5 text-xs font-semibold text-[#123524] hover:bg-[#F1F5EA] disabled:opacity-60"
         >
           {gpsLoading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -181,7 +181,7 @@ export function FarmLocationPicker({ value, onChange }: FarmLocationPickerProps)
         </button>
       </div>
 
-      <div className="h-56 w-full rounded-xl overflow-hidden border border-gray-200 z-0">
+      <div className="z-0 h-56 w-full overflow-hidden rounded-2xl border border-[#E6EADF]">
         <MapContainer
           center={pinPosition ?? DEFAULT_CENTER}
           zoom={hasPin ? PIN_ZOOM : DEFAULT_ZOOM}
@@ -200,29 +200,29 @@ export function FarmLocationPicker({ value, onChange }: FarmLocationPickerProps)
         </MapContainer>
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-[#5C6B60]">
         Tap the map or drag the pin to set your farm&apos;s precise location.
       </p>
 
       {gpsError ? <p className="text-xs text-red-600">{gpsError}</p> : null}
       {boundsWarning ? <p className="text-xs text-amber-700">{boundsWarning}</p> : null}
 
-      <div className="rounded-lg bg-gray-50 px-3 py-2 text-sm min-h-[2.5rem] flex items-center">
+      <div className="flex min-h-[2.5rem] items-center rounded-2xl bg-[#F6F7F2] px-3 py-2 text-sm">
         {geocoding ? (
-          <span className="inline-flex items-center gap-2 text-gray-500">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <span className="inline-flex items-center gap-2 text-[#5C6B60]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Resolving location…
           </span>
         ) : hasPin && value.location ? (
-          <span className="text-gray-800">
-            <span className="font-medium">{value.location}</span>
-            <span className="text-gray-500">
+          <span className="text-[#10241A]">
+            <span className="font-semibold">{value.location}</span>
+            <span className="text-[#5C6B60]">
               {' '}
               · {value.latitude!.toFixed(4)}, {value.longitude!.toFixed(4)}
             </span>
           </span>
         ) : (
-          <span className="text-gray-400">Pin your farm on the map</span>
+          <span className="text-[#5C6B60]">Pin your farm on the map</span>
         )}
       </div>
     </div>

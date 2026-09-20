@@ -2,15 +2,23 @@ import { Router } from 'express'
 import type { Request } from 'express'
 import { requireAuth } from '../../middleware/auth.js'
 import { asyncHandler } from '../../utils/asyncHandler.js'
-import { forbidden, notFound, unauthorized } from '../../utils/errors.js'
+import { forbidden, unauthorized } from '../../utils/errors.js'
 import { pool } from '../../db/pool.js'
 import { centroidForLocation } from '../../constants/districts.js'
-import { getFarmerProfile } from '../auth/auth.service.js'
 import {
-  deleteFarmForUser,
-  insertFarm,
-  updateFarmForUser,
-} from '../auth/auth.repository.js'
+  changePassword as changeAccountPassword,
+  deleteFarmerFarm,
+  getFarmerProfile,
+  setFarmerPrimaryFarm,
+  updateFarmerFarm,
+  updateFarmerProfile,
+} from '../auth/auth.service.js'
+import { insertFarm } from '../auth/auth.repository.js'
+import {
+  changePasswordSchema,
+  setPrimaryFarmSchema,
+  updateProfileSchema,
+} from '../auth/auth.schemas.js'
 import { farmBodySchema } from '../weather/weather.schemas.js'
 
 const router = Router()
@@ -28,6 +36,39 @@ router.get(
     const user = requireFarmer(req)
     const profile = await getFarmerProfile(user.id)
     res.json(profile)
+  }),
+)
+
+router.patch(
+  '/farmers/profile',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = requireFarmer(req)
+    const input = updateProfileSchema.parse(req.body)
+    const updated = await updateFarmerProfile(user.id, input)
+    res.json(updated)
+  }),
+)
+
+router.patch(
+  '/farmers/password',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = requireFarmer(req)
+    const input = changePasswordSchema.parse(req.body)
+    const result = await changeAccountPassword(user.id, user.role, input)
+    res.json(result)
+  }),
+)
+
+router.patch(
+  '/farmers/primary-farm',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = requireFarmer(req)
+    const input = setPrimaryFarmSchema.parse(req.body)
+    const farms = await setFarmerPrimaryFarm(user.id, input.farmId)
+    res.json({ farms })
   }),
 )
 
@@ -61,8 +102,18 @@ router.patch(
     const user = requireFarmer(req)
     const input = farmBodySchema.parse(req.body)
     const farmId = String(req.params.id)
-    const farm = await updateFarmForUser(farmId, user.id, input)
-    if (!farm) throw notFound('Farm not found')
+    const coords =
+      input.latitude === 0 && input.longitude === 0
+        ? centroidForLocation(input.location)
+        : { latitude: input.latitude, longitude: input.longitude }
+    const farm = await updateFarmerFarm(user.id, farmId, {
+      name: input.name,
+      location: input.location,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      acreage: input.acreage,
+      treeCount: input.treeCount,
+    })
     res.json(farm)
   }),
 )
@@ -73,9 +124,8 @@ router.delete(
   asyncHandler(async (req, res) => {
     const user = requireFarmer(req)
     const farmId = String(req.params.id)
-    const deleted = await deleteFarmForUser(farmId, user.id)
-    if (!deleted) throw notFound('Farm not found')
-    res.json({ ok: true })
+    const result = await deleteFarmerFarm(user.id, farmId)
+    res.json(result)
   }),
 )
 

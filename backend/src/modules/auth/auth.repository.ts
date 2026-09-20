@@ -24,12 +24,24 @@ interface FarmRow {
   longitude: number
   acreage: string | number
   tree_count: number
+  primary_farm_id?: string | null
 }
 
 const ACCOUNT_TABLE: Record<UserRole, 'farmers' | 'officers' | 'admins'> = {
   farmer: 'farmers',
   officer: 'officers',
   admin: 'admins',
+}
+
+let primaryFarmColumnReady = false
+
+export async function ensurePrimaryFarmColumn() {
+  if (primaryFarmColumnReady) return
+  await pool.query(`
+    ALTER TABLE farmers
+      ADD COLUMN IF NOT EXISTS primary_farm_id uuid REFERENCES farms(id) ON DELETE SET NULL
+  `)
+  primaryFarmColumnReady = true
 }
 
 function mapAccount(row: AccountRow, role: UserRole): AuthAccount {
@@ -47,7 +59,7 @@ function mapAccount(row: AccountRow, role: UserRole): AuthAccount {
   }
 }
 
-export function mapFarm(row: FarmRow): Farm {
+export function mapFarm(row: FarmRow, isPrimary = false): Farm {
   return {
     id: row.id,
     name: row.name,
@@ -56,6 +68,7 @@ export function mapFarm(row: FarmRow): Farm {
     longitude: Number(row.longitude),
     acreage: Number(row.acreage),
     treeCount: row.tree_count,
+    isPrimary,
   }
 }
 
@@ -136,6 +149,37 @@ export async function emailExists(email: string, client: Db = pool) {
   return (result.rowCount ?? 0) > 0
 }
 
+export async function emailTakenByOther(email: string, farmerId: string): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT 1 FROM (
+       SELECT id, email FROM farmers WHERE id <> $2
+       UNION ALL
+       SELECT id, email FROM officers
+       UNION ALL
+       SELECT id, email FROM admins
+     ) accounts
+     WHERE email IS NOT NULL AND lower(email) = lower($1)
+     LIMIT 1`,
+    [email, farmerId],
+  )
+  return (result.rowCount ?? 0) > 0
+}
+
+export async function updateFarmerContact(
+  id: string,
+  input: { name: string; email: string | null; phone: string | null },
+): Promise<AuthAccount | null> {
+  const result = await pool.query<AccountRow>(
+    `UPDATE farmers
+     SET name = $2, email = $3, phone = $4, updated_at = now()
+     WHERE id = $1
+     RETURNING id, username, password_hash, name, email, phone, is_active`,
+    [id, input.name, input.email, input.phone],
+  )
+  const row = result.rows[0]
+  return row ? mapAccount(row, 'farmer') : null
+}
+
 export async function insertFarmer(
   client: Db,
   input: {
@@ -167,6 +211,7 @@ export async function insertFarm(
     treeCount: number
   },
 ): Promise<Farm> {
+  await ensurePrimaryFarmColumn()
   const result = await client.query<FarmRow>(
     `INSERT INTO farms (user_id, name, location, latitude, longitude, acreage, tree_count)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -181,19 +226,24 @@ export async function insertFarm(
       input.treeCount,
     ],
   )
-  return mapFarm(result.rows[0]!)
+  const farm = mapFarm(result.rows[0]!, false)
+  const existingPrimary = await client.query<{ primary_farm_id: string | null }>(
+    `SELECT primary_farm_id FROM farmers WHERE id = $1 LIMIT 1`,
+    [input.userId],
+  )
+  if (!existingPrimary.rows[0]?.primary_farm_id) {
+    await client.query(`UPDATE farmers SET primary_farm_id = $1, updated_at = now() WHERE id = $2`, [
+      farm.id,
+      input.userId,
+    ])
+    farm.isPrimary = true
+  }
+  return farm
 }
 
 export async function findFarmByIdForUser(farmId: string, userId: string): Promise<Farm | null> {
-  const result = await pool.query<FarmRow>(
-    `SELECT id, name, location, latitude, longitude, acreage, tree_count
-     FROM farms
-     WHERE id = $1 AND user_id = $2
-     LIMIT 1`,
-    [farmId, userId],
-  )
-  const row = result.rows[0]
-  return row ? mapFarm(row) : null
+  const farms = await listFarmsByUserId(userId)
+  return farms.find((farm) => farm.id === farmId) ?? null
 }
 
 export async function updateFarmForUser(
@@ -225,7 +275,34 @@ export async function updateFarmForUser(
     ],
   )
   const row = result.rows[0]
-  return row ? mapFarm(row) : null
+  if (!row) return null
+  const farms = await listFarmsByUserId(userId)
+  return farms.find((farm) => farm.id === farmId) ?? mapFarm(row)
+}
+
+export async function countFarmDependencies(farmId: string) {
+  const reports = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM disease_reports WHERE farm_id = $1`,
+    [farmId],
+  )
+  const alerts = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM disease_alerts WHERE farm_id = $1`,
+    [farmId],
+  )
+  return {
+    reports: Number(reports.rows[0]?.count ?? 0),
+    alerts: Number(alerts.rows[0]?.count ?? 0),
+  }
+}
+
+export async function setPrimaryFarmId(userId: string, farmId: string): Promise<void> {
+  await ensurePrimaryFarmColumn()
+  await pool.query(
+    `UPDATE farmers
+     SET primary_farm_id = $1, updated_at = now()
+     WHERE id = $2`,
+    [farmId, userId],
+  )
 }
 
 export async function deleteFarmForUser(farmId: string, userId: string): Promise<boolean> {
@@ -238,14 +315,33 @@ export async function deleteFarmForUser(farmId: string, userId: string): Promise
 }
 
 export async function listFarmsByUserId(userId: string): Promise<Farm[]> {
+  await ensurePrimaryFarmColumn()
   const result = await pool.query<FarmRow>(
-    `SELECT id, name, location, latitude, longitude, acreage, tree_count
-     FROM farms
-     WHERE user_id = $1
-     ORDER BY created_at ASC`,
+    `SELECT f.id, f.name, f.location, f.latitude, f.longitude, f.acreage, f.tree_count,
+            fa.primary_farm_id
+     FROM farms f
+     JOIN farmers fa ON fa.id = f.user_id
+     WHERE f.user_id = $1
+     ORDER BY f.created_at ASC`,
     [userId],
   )
-  return result.rows.map(mapFarm)
+
+  const storedPrimary = result.rows[0]?.primary_farm_id ?? null
+  const hasStoredPrimary = Boolean(
+    storedPrimary && result.rows.some((row) => row.id === storedPrimary),
+  )
+  const primaryId = hasStoredPrimary ? storedPrimary : (result.rows[0]?.id ?? null)
+
+  if (!hasStoredPrimary && primaryId) {
+    await pool.query(
+      `UPDATE farmers SET primary_farm_id = $1, updated_at = now() WHERE id = $2 AND primary_farm_id IS NULL`,
+      [primaryId, userId],
+    )
+  }
+
+  return result.rows
+    .map((row) => mapFarm(row, row.id === primaryId))
+    .sort((a, b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)))
 }
 
 export async function updatePassword(

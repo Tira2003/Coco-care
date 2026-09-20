@@ -14,6 +14,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return
   }
 
+  if (error.code === '23503') {
+    res.status(409).json({
+      message: 'This farm is still linked to other records and cannot be deleted.',
+    })
+    return
+  }
+
   const status = error.status ?? 500
   if (status >= 500) {
     console.error(err)

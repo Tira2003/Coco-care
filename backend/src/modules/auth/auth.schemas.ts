@@ -33,10 +33,33 @@ export const registerSchema = z.object({
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+})
+
+const emptyToNull = (value: unknown) => {
+  if (typeof value === 'string' && value.trim() === '') return null
+  return value
+}
+
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(3, 'Please enter your full name').max(100),
+  email: z.preprocess(
+    emptyToNull,
+    z.union([z.string().trim().email('That email does not look right'), z.null()]).optional(),
+  ),
+  phone: z.preprocess(
+    emptyToNull,
+    z.union([z.string().trim().min(9, 'Enter a valid mobile number').max(20), z.null()]).optional(),
+  ),
+})
+
+export const setPrimaryFarmSchema = z.object({
+  farmId: z.string().uuid('Choose a farm to set as primary'),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
 export type FarmInput = z.infer<typeof farmInputSchema>
+export type SetPrimaryFarmInput = z.infer<typeof setPrimaryFarmSchema>
