@@ -12,6 +12,7 @@ import {
   Trees,
 } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { farmApi } from '@/api/services'
 import { useAuth } from '@/contexts/AuthContext'
@@ -36,12 +37,6 @@ type FarmFormState = {
   treeCount: string
 }
 
-type ProfileFormState = {
-  name: string
-  email: string
-  phone: string
-}
-
 const emptyFarmForm: FarmFormState = {
   name: '',
   acreage: '5',
@@ -52,18 +47,6 @@ const emptyLocation: FarmLocationValue = {
   latitude: null,
   longitude: null,
   location: '',
-}
-
-const emptyProfileForm: ProfileFormState = {
-  name: '',
-  email: '',
-  phone: '',
-}
-
-const emptyPasswordForm = {
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -84,18 +67,13 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export function Profile() {
-  const { user, updateUser } = useAuth()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [showFarmDialog, setShowFarmDialog] = useState(false)
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null)
   const [farmForm, setFarmForm] = useState<FarmFormState>(emptyFarmForm)
   const [farmLocation, setFarmLocation] = useState<FarmLocationValue>(emptyLocation)
   const [locationError, setLocationError] = useState('')
-  const [showProfileDialog, setShowProfileDialog] = useState(false)
-  const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm)
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
-  const [passwordForm, setPasswordForm] = useState(emptyPasswordForm)
-  const [passwordError, setPasswordError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Farm | null>(null)
 
   const { data: profile, isLoading } = useQuery({
@@ -124,27 +102,6 @@ export function Profile() {
     const primary = farms.find((farm) => farm.isPrimary)
     if (primary) persistSelectedFarm(primary.id)
   }
-
-  const profileMutation = useMutation({
-    mutationFn: farmApi.updateProfile,
-    onSuccess: (updated) => {
-      queryClient.setQueryData<{ user: User; farms: Farm[] }>(
-        ['farmer', 'profile'],
-        (old) => (old ? { ...old, user: updated } : old),
-      )
-      updateUser(updated)
-      setShowProfileDialog(false)
-    },
-  })
-
-  const passwordMutation = useMutation({
-    mutationFn: farmApi.changePassword,
-    onSuccess: () => {
-      setShowPasswordDialog(false)
-      setPasswordForm(emptyPasswordForm)
-      setPasswordError('')
-    },
-  })
 
   const createFarmMutation = useMutation({
     mutationFn: farmApi.create,
@@ -191,14 +148,6 @@ export function Profile() {
     primaryFarmMutation.error,
     'Could not set this as your primary farm.',
   )
-  const profileError = getErrorMessage(
-    profileMutation.error,
-    'Could not update profile. Please try again.',
-  )
-  const passwordMutationError = getErrorMessage(
-    passwordMutation.error,
-    'Could not change password. Please try again.',
-  )
 
   const openCreateFarm = () => {
     setEditingFarm(null)
@@ -236,53 +185,6 @@ export function Profile() {
     setLocationError('')
     createFarmMutation.reset()
     updateFarmMutation.reset()
-  }
-
-  const openProfileDialog = () => {
-    setProfileForm({
-      name: displayUser?.name ?? '',
-      email: displayUser?.email ?? '',
-      phone: displayUser?.phone ?? '',
-    })
-    profileMutation.reset()
-    setShowProfileDialog(true)
-  }
-
-  const openPasswordDialog = () => {
-    setPasswordForm(emptyPasswordForm)
-    setPasswordError('')
-    passwordMutation.reset()
-    setShowPasswordDialog(true)
-  }
-
-  const handleProfileSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    profileMutation.mutate({
-      name: profileForm.name,
-      email: profileForm.email.trim() || null,
-      phone: profileForm.phone.trim() || null,
-    })
-  }
-
-  const handlePasswordSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    setPasswordError('')
-    if (passwordForm.newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters.')
-      return
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('New passwords do not match.')
-      return
-    }
-    if (passwordForm.newPassword === passwordForm.currentPassword) {
-      setPasswordError('New password must be different from the current password.')
-      return
-    }
-    passwordMutation.mutate({
-      currentPassword: passwordForm.currentPassword,
-      newPassword: passwordForm.newPassword,
-    })
   }
 
   const handleFarmSubmit = (e: FormEvent) => {
@@ -347,22 +249,20 @@ export function Profile() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex">
-            <button
-              type="button"
-              onClick={openProfileDialog}
+            <Link
+              to="/app/settings#account"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <Edit2 className="h-4 w-4" />
               Edit
-            </button>
-            <button
-              type="button"
-              onClick={openPasswordDialog}
+            </Link>
+            <Link
+              to="/app/settings#password"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <KeyRound className="h-4 w-4" />
               Password
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -420,114 +320,6 @@ export function Profile() {
           )}
         </div>
       </div>
-
-      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
-              Edit Profile
-            </DialogTitle>
-            <DialogDescription>Update your contact details.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleProfileSubmit} className="grid gap-3">
-            <TextField
-              label="Name"
-              value={profileForm.name}
-              onChange={(value) => setProfileForm({ ...profileForm, name: value })}
-              required
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={profileForm.email}
-              onChange={(value) => setProfileForm({ ...profileForm, email: value })}
-            />
-            <TextField
-              label="Phone"
-              value={profileForm.phone}
-              onChange={(value) => setProfileForm({ ...profileForm, phone: value })}
-            />
-            {profileMutation.isError ? (
-              <p className="text-sm text-red-600">{profileError}</p>
-            ) : null}
-            <DialogFooter>
-              <button
-                type="button"
-                onClick={() => setShowProfileDialog(false)}
-                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={profileMutation.isPending}
-                className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
-              >
-                {profileMutation.isPending ? 'Saving…' : 'Save Changes'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
-              Change Password
-            </DialogTitle>
-            <DialogDescription>Enter your current password before setting a new one.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handlePasswordSubmit} className="grid gap-3">
-            <TextField
-              label="Current password"
-              type="password"
-              value={passwordForm.currentPassword}
-              onChange={(value) =>
-                setPasswordForm({ ...passwordForm, currentPassword: value })
-              }
-              required
-            />
-            <TextField
-              label="New password"
-              type="password"
-              value={passwordForm.newPassword}
-              onChange={(value) => setPasswordForm({ ...passwordForm, newPassword: value })}
-              required
-            />
-            <TextField
-              label="Confirm new password"
-              type="password"
-              value={passwordForm.confirmPassword}
-              onChange={(value) =>
-                setPasswordForm({ ...passwordForm, confirmPassword: value })
-              }
-              required
-            />
-            {passwordError || passwordMutation.isError ? (
-              <p className="text-sm text-red-600">
-                {passwordError || passwordMutationError}
-              </p>
-            ) : null}
-            <DialogFooter>
-              <button
-                type="button"
-                onClick={() => setShowPasswordDialog(false)}
-                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={passwordMutation.isPending}
-                className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
-              >
-                {passwordMutation.isPending ? 'Saving…' : 'Change Password'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <Dialog
         open={showFarmDialog}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { X, MapPin, Smartphone, Settings, HelpCircle, LogOut, ChevronRight, UserRound } from 'lucide-react'
+import { X, MapPin, Smartphone, HelpCircle, LogOut, ChevronRight, UserRound } from 'lucide-react'
 
 interface MobileProfileSheetProps {
   isOpen: boolean
@@ -114,41 +114,29 @@ export function MobileProfileSheet({
             <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
           </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/app/help#guides"
             onClick={onClose}
-            className="w-full flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors text-left cursor-pointer"
+            className="flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors"
           >
             <div className="flex items-center gap-3">
               <Smartphone className="w-[18px] h-[18px] text-[#55655A]" />
               <span>Saved guides</span>
             </div>
             <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
-          </button>
-
-          <Link
-            to="/app/profile"
-            onClick={onClose}
-            className="flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-[18px] h-[18px] text-[#55655A]" />
-              <span>Settings</span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
           </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/app/help"
             onClick={onClose}
-            className="w-full flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors text-left cursor-pointer"
+            className="flex items-center justify-between py-3.5 text-[14px] font-medium text-[#123524] hover:bg-[#F8FAF5] px-1 rounded-lg transition-colors"
           >
             <div className="flex items-center gap-3">
               <HelpCircle className="w-[18px] h-[18px] text-[#55655A]" />
               <span>Help & support</span>
             </div>
             <ChevronRight className="w-4 h-4 text-[#A0ACA0]" />
-          </button>
+          </Link>
 
           <button
             type="button"

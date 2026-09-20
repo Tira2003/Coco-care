@@ -4,6 +4,7 @@ import * as diseaseMapController from './diseaseMap.controller.js'
 
 const router = Router()
 
+router.get('/api/disease-map/public', diseaseMapController.publicHeatmap)
 router.get('/api/disease-map/heatmap', requireAuth, diseaseMapController.heatmap)
 router.get('/api/disease-map/nearby', requireAuth, diseaseMapController.nearby)
 router.get('/api/disease-map/alerts', requireAuth, diseaseMapController.alerts)

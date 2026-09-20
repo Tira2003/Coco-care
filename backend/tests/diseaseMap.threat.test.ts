@@ -1,4 +1,4 @@
-import { haversineKm, threatLevel } from '../src/modules/diseaseMap/threat.js'
+import { haversineKm, threatLevel, toPublicHeatmapPoint } from '../src/modules/diseaseMap/threat.js'
 
 describe('disease map threat helpers', () => {
   it('classifies confidence into threat levels', () => {
@@ -15,5 +15,27 @@ describe('disease map threat helpers', () => {
     )
     expect(km).toBeGreaterThan(90)
     expect(km).toBeLessThan(130)
+  })
+
+  it('strips farm identity from public heatmap points', () => {
+    const publicPoint = toPublicHeatmapPoint({
+      lat: 7.084,
+      lng: 80.0098,
+      weight: 0.92,
+      diseaseType: 'Leaf Rot',
+      verificationStatus: 'verified',
+      threatLevel: 'critical',
+      createdAt: '2026-09-20T00:00:00.000Z',
+      reportId: 'report-1',
+      farmId: 'farm-1',
+      farmName: 'Sadeepa\'s State',
+      district: 'Gampaha',
+      count: 3,
+    })
+    expect(publicPoint.farmName).toBeUndefined()
+    expect(publicPoint.farmId).toBeUndefined()
+    expect(publicPoint.reportId).toBeUndefined()
+    expect(publicPoint.district).toBe('Gampaha')
+    expect(publicPoint.diseaseType).toBe('Leaf Rot')
   })
 })

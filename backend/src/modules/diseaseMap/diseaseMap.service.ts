@@ -17,7 +17,7 @@ import {
   upsertAlert,
 } from './diseaseMap.repository.js'
 import type { HeatmapQuery, NearbyQuery } from './diseaseMap.schemas.js'
-import { haversineKm, threatLevel } from './threat.js'
+import { haversineKm, threatLevel, toPublicHeatmapPoint } from './threat.js'
 
 export function assertFarmer(role: string) {
   if (role !== 'farmer') throw forbidden('Farmer access required')
@@ -26,6 +26,11 @@ export function assertFarmer(role: string) {
 export async function getHeatmap(filters: HeatmapQuery): Promise<HeatmapPoint[]> {
   const rows = await listOutbreakRows(filters)
   return aggregateHeatmapPoints(rows)
+}
+
+export async function getPublicHeatmap(): Promise<HeatmapPoint[]> {
+  const points = await getHeatmap({})
+  return points.map(toPublicHeatmapPoint)
 }
 
 export async function getStats(filters: HeatmapQuery): Promise<DiseaseMapStats> {

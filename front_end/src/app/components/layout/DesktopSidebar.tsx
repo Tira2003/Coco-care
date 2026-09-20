@@ -1,15 +1,13 @@
-﻿import { Link } from 'react-router'
+﻿import { Link, useNavigate } from 'react-router'
 import {
   LayoutGrid,
   FileText,
   MessageSquare,
   UserRound,
   Map,
-  Settings,
   HelpCircle,
   Search,
   PanelLeftClose,
-  MoreHorizontal,
   LogOut,
   User,
   ChevronDown,
@@ -29,8 +27,8 @@ const menuNav = [
 ]
 
 const toolsNav = [
-  { name: 'Settings', href: '/app/profile', icon: Settings },
-  { name: 'Help Center', href: '#help', icon: HelpCircle, isAction: true },
+  { name: 'View Profile', href: '/app/profile', icon: User },
+  { name: 'Help Center', href: '/app/help', icon: HelpCircle },
 ]
 
 function isNavActive(pathname: string, href: string) {
@@ -77,6 +75,7 @@ export function DesktopSidebar({
   handleLogout,
   locationPath,
 }: DesktopSidebarProps) {
+  const navigate = useNavigate()
   const sidebarWide = !collapsed
 
   return (
@@ -137,6 +136,12 @@ export function DesktopSidebar({
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return
+                event.preventDefault()
+                const q = searchQuery.trim()
+                navigate(q ? `/app/help?q=${encodeURIComponent(q)}` : '/app/help')
+              }}
               className="w-full bg-transparent text-xs text-[#10241A] placeholder-[#5C6B60] outline-none"
             />
             <span className="shrink-0 rounded-md border border-[#E6EADF] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#5C6B60]">
@@ -235,7 +240,7 @@ export function DesktopSidebar({
           )}
           <nav className="space-y-0.5" aria-label="Tools menu">
             {toolsNav.map((item) => {
-              const active = !item.isAction && isNavActive(locationPath, item.href)
+              const active = isNavActive(locationPath, item.href)
               const Icon = item.icon
               return (
                 <Link
@@ -342,14 +347,6 @@ export function DesktopSidebar({
             >
               <User className="h-3.5 w-3.5 text-[#5C6B60]" />
               View profile
-            </Link>
-            <Link
-              to="/app/profile"
-              onClick={() => setProfileOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-[#10241A] hover:bg-[#F1F5EA]"
-            >
-              <Settings className="h-3.5 w-3.5 text-[#5C6B60]" />
-              Settings
             </Link>
             <button
               type="button"

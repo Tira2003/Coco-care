@@ -10,9 +10,11 @@ import { FruitDiseaseDiagnosis } from './pages/FruitDiseaseDiagnosis'
 import { SymptomDiseaseDiagnosis } from './pages/SymptomDiseaseDiagnosis'
 import { AIChatbot } from './pages/AIChatbot'
 import { OfficerConsultations } from './pages/OfficerConsultations'
+import { HelpCenter } from './pages/HelpCenter'
 import { DiseaseHeatmap } from './pages/DiseaseHeatmap'
 import { Notifications } from './pages/Notifications'
 import { Profile } from './pages/Profile'
+import { Settings } from './pages/Settings'
 import { OfficerLayout } from './layouts/OfficerLayout'
 import { ReportReviewPage } from './pages/officer/ReportReviewPage'
 import { OfficerConsultationsPage } from './pages/officer/OfficerConsultationsPage'
@@ -47,9 +49,11 @@ export const router = createBrowserRouter([
           { path: 'disease-detection/symptoms/:category', Component: SymptomDiseaseDiagnosis },
           { path: 'chatbot', Component: AIChatbot },
           { path: 'consultations', Component: OfficerConsultations },
+          { path: 'help', Component: HelpCenter },
           { path: 'heatmap', Component: DiseaseHeatmap },
           { path: 'notifications', Component: Notifications },
           { path: 'profile', Component: Profile },
+          { path: 'settings', Component: Settings },
         ],
       },
     ],

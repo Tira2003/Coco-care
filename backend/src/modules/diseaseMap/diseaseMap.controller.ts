@@ -7,6 +7,7 @@ import {
   getAlerts,
   getHeatmap,
   getNearby,
+  getPublicHeatmap,
   getStats,
   readAlert,
 } from './diseaseMap.service.js'
@@ -16,6 +17,10 @@ function farmer(req: Request) {
   assertFarmer(req.user.role)
   return req.user
 }
+
+export const publicHeatmap = asyncHandler(async (_req: Request, res: Response) => {
+  res.json(await getPublicHeatmap())
+})
 
 export const heatmap = asyncHandler(async (req: Request, res: Response) => {
   farmer(req)

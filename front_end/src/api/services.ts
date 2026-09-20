@@ -126,6 +126,10 @@ export const reportsApi = {
 }
 
 export const diseaseMapApi = {
+  publicHeatmap: async () => {
+    const { data } = await apiClient.get<HeatmapPoint[]>('/api/disease-map/public')
+    return data
+  },
   heatmap: async (filters?: HeatmapFilters) => {
     const { data } = await apiClient.get<HeatmapPoint[]>(
       '/api/disease-map/heatmap',

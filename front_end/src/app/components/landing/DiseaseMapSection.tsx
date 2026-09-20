@@ -1,10 +1,62 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { diseaseMapApi } from '@/api/services'
+import type { HeatmapPoint } from '@/types'
 
-function DiseaseLeafletMap() {
+const SRI_LANKA_CENTER: [number, number] = [7.8731, 80.7718]
+const SRI_LANKA_BOUNDS: L.LatLngBoundsExpression = [
+  [5.85, 79.52],
+  [9.88, 82.0],
+]
+
+const STATUS_COLORS: Record<HeatmapPoint['verificationStatus'], string> = {
+  verified: '#E5484D',
+  ai_suspected: '#F5A524',
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function offsetOverlapping(points: HeatmapPoint[]) {
+  const groups = new Map<string, HeatmapPoint[]>()
+  for (const point of points) {
+    const key = `${point.lat.toFixed(4)}:${point.lng.toFixed(4)}`
+    const list = groups.get(key) ?? []
+    list.push(point)
+    groups.set(key, list)
+  }
+
+  const placed: HeatmapPoint[] = []
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      placed.push(group[0]!)
+      continue
+    }
+    group.forEach((point, index) => {
+      const angle = (2 * Math.PI * index) / group.length
+      const d = 0.04
+      placed.push({
+        ...point,
+        lat: point.lat + d * Math.cos(angle),
+        lng: point.lng + d * Math.sin(angle),
+      })
+    })
+  }
+  return placed
+}
+
+function DiseaseLeafletMap({ points }: { points: HeatmapPoint[] }) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
+  const markersRef = useRef<L.LayerGroup | null>(null)
+  const displayPoints = useMemo(() => offsetOverlapping(points), [points])
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return
@@ -12,9 +64,14 @@ function DiseaseLeafletMap() {
     const map = L.map(mapContainerRef.current, {
       scrollWheelZoom: false,
       zoomControl: true,
-    }).setView([7.6, 80.1], 7)
+      maxBounds: SRI_LANKA_BOUNDS,
+      maxBoundsViscosity: 0.85,
+      minZoom: 7,
+      maxZoom: 14,
+    }).setView(SRI_LANKA_CENTER, 7)
 
     mapInstanceRef.current = map
+    markersRef.current = L.layerGroup().addTo(map)
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
@@ -24,51 +81,73 @@ function DiseaseLeafletMap() {
 
     map.on('click', () => map.scrollWheelZoom.enable())
 
-    const colors: Record<string, string> = {
-      verified: '#E5484D',
-      suspected: '#F5A524',
-      cleared: '#3DA35D',
-    }
-
-    const spots = [
-      { c: [7.48, 80.36] as [number, number], t: 'Kurunegala', s: 'verified', r: 22, d: 'Bud Rot — 12 verified reports this month' },
-      { c: [7.94, 79.84] as [number, number], t: 'Puttalam', s: 'verified', r: 18, d: 'Stem Bleeding — 7 verified reports' },
-      { c: [7.09, 80.15] as [number, number], t: 'Kegalle', s: 'suspected', r: 14, d: 'Leaf Miner — 3 suspected cases under review' },
-      { c: [7.29, 80.63] as [number, number], t: 'Matale', s: 'suspected', r: 12, d: 'Grey Leaf Spot — 2 suspected cases' },
-      { c: [6.93, 79.86] as [number, number], t: 'Colombo / Gampaha', s: 'cleared', r: 10, d: 'Cleared — no active outbreaks' },
-      { c: [8.35, 80.50] as [number, number], t: 'Anamaduwa', s: 'cleared', r: 9, d: 'Cleared — treated & recovered' },
-    ]
-
-    spots.forEach((p) => {
-      L.circleMarker(p.c, {
-        radius: p.r,
-        color: colors[p.s],
-        weight: 2,
-        fillColor: colors[p.s],
-        fillOpacity: 0.32,
-      })
-        .addTo(map)
-        .bindPopup(
-          `<div style="font-family:'Inter',sans-serif;font-size:13px;line-height:1.4;">
-            <b style="color:#10241A;font-size:14px;">${p.t}</b><br>
-            <span style="color:#5C6B60;">${p.d}</span><br>
-            <span style="color:${colors[p.s]};font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.06em;display:inline-block;margin-top:4px;">
-              ${p.s}
-            </span>
-          </div>`
-        )
-    })
+    const invalidate = () => map.invalidateSize()
+    window.addEventListener('resize', invalidate)
+    const sizeTimer = window.setTimeout(invalidate, 80)
 
     return () => {
+      window.removeEventListener('resize', invalidate)
+      window.clearTimeout(sizeTimer)
       map.remove()
       mapInstanceRef.current = null
+      markersRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const markers = markersRef.current
+    if (!map || !markers) return
+
+    markers.clearLayers()
+
+    for (const point of displayPoints) {
+      const status = point.verificationStatus
+      const color = STATUS_COLORS[status]
+      const count = point.count ?? 1
+      const radius = Math.min(22, 10 + count * 2)
+      const label = status === 'verified' ? 'Verified outbreak' : 'Suspected'
+      const district = escapeHtml(point.district || 'Sri Lanka')
+      const disease = escapeHtml(point.diseaseType)
+      const reports = count === 1 ? '1 farmer report' : `${count} farmer reports`
+
+      L.circleMarker([point.lat, point.lng], {
+        radius,
+        color,
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 0.38,
+      })
+        .addTo(markers)
+        .bindPopup(
+          `<div style="font-family:'Inter',sans-serif;font-size:13px;line-height:1.45;min-width:160px;">
+            <b style="color:#10241A;font-size:14px;">${disease}</b><br>
+            <span style="color:#5C6B60;">${district} · ${reports}</span><br>
+            <span style="color:${color};font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.06em;display:inline-block;margin-top:4px;">
+              ${label}
+            </span>
+          </div>`,
+        )
+    }
+
+    if (displayPoints.length === 0) {
+      map.setView(SRI_LANKA_CENTER, 7)
+    }
+  }, [displayPoints])
 
   return <div ref={mapContainerRef} className="h-[460px] w-full rounded-2xl overflow-hidden filter saturate-[.95]" />
 }
 
 export function DiseaseMapSection() {
+  const { data: points = [], isLoading, isError } = useQuery({
+    queryKey: ['disease-map', 'public'],
+    queryFn: diseaseMapApi.publicHeatmap,
+    refetchInterval: 5 * 60 * 1000,
+  })
+
+  const verifiedCount = points.filter((point) => point.verificationStatus === 'verified').length
+  const suspectedCount = points.length - verifiedCount
+
   return (
     <section className="py-20 sm:py-24 bg-[#123524] text-white" id="map">
       <div className="max-w-[1200px] mx-auto px-6">
@@ -84,38 +163,53 @@ export function DiseaseMapSection() {
               they reach your gate
             </h2>
             <p className="text-[#AEC0A6] text-base max-w-xl leading-relaxed">
-              Verified and suspected cases, mapped across the Coconut Triangle. Try it — drag, zoom, tap the markers.
+              Real coconut disease reports from Coco Care farmers, mapped across Sri Lanka. Drag,
+              zoom, and tap a marker.
             </p>
           </div>
 
           <div className="inline-flex items-center gap-2 text-xs font-bold bg-[#C9F169]/15 border border-[#C9F169]/30 text-[#C9F169] px-4 py-2 rounded-full self-start sm:self-auto">
             <span className="w-2 h-2 rounded-full bg-[#C9F169] animate-ping" />
-            Live · syncs every 5 min
+            {isLoading
+              ? 'Loading farmer reports'
+              : `${points.length} outbreak${points.length === 1 ? '' : 's'} · live`}
           </div>
         </div>
 
         <div className="relative rounded-3xl overflow-hidden border border-white/15 shadow-2xl bg-[#0C281B]">
-          <DiseaseLeafletMap />
+          <DiseaseLeafletMap points={points} />
 
-          {/* Map Legend */}
+          {isLoading ? (
+            <div className="absolute inset-0 z-[400] flex items-center justify-center bg-[#0C281B]/40 text-sm font-semibold text-white">
+              Loading Sri Lanka outbreak map…
+            </div>
+          ) : null}
+
+          {!isLoading && points.length === 0 ? (
+            <div className="pointer-events-none absolute inset-x-0 top-4 z-[400] flex justify-center px-4">
+              <p className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-[#10241A] shadow-md">
+                {isError
+                  ? 'Could not load farmer outbreak reports.'
+                  : 'No farmer-reported coconut outbreaks are mapped yet.'}
+              </p>
+            </div>
+          ) : null}
+
           <div className="absolute left-4 bottom-4 z-[500] bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#10241A] shadow-md">
             <span className="flex items-center gap-2">
               <i className="w-2.5 h-2.5 rounded-full bg-[#E5484D]" />
-              Verified outbreak
+              Verified outbreak{verifiedCount ? ` · ${verifiedCount}` : ''}
             </span>
             <span className="flex items-center gap-2">
               <i className="w-2.5 h-2.5 rounded-full bg-[#F5A524]" />
-              Suspected
-            </span>
-            <span className="flex items-center gap-2">
-              <i className="w-2.5 h-2.5 rounded-full bg-[#3DA35D]" />
-              Cleared
+              Suspected{suspectedCount ? ` · ${suspectedCount}` : ''}
             </span>
           </div>
         </div>
 
         <p className="mt-4 text-xs sm:text-sm text-[#8FA68B]">
-          Showing live regional field telemetry. In production, markers reflect officer-verified reports and suspected cases streamed in real time.
+          Markers are farmer diagnoses from groves in Sri Lanka. Red is officer-verified; amber is
+          still under review.
         </p>
       </div>
     </section>

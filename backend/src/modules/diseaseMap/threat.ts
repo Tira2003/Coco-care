@@ -1,4 +1,4 @@
-import type { ThreatLevel, VerificationStatus } from '../../types/index.js'
+import type { HeatmapPoint, ThreatLevel, VerificationStatus } from '../../types/index.js'
 
 export function threatLevel(weight: number): ThreatLevel {
   if (weight >= 0.8) return 'critical'
@@ -9,6 +9,20 @@ export function threatLevel(weight: number): ThreatLevel {
 
 export function verificationStatus(status: string): VerificationStatus {
   return status === 'verified' ? 'verified' : 'ai_suspected'
+}
+
+export function toPublicHeatmapPoint(point: HeatmapPoint): HeatmapPoint {
+  return {
+    lat: point.lat,
+    lng: point.lng,
+    weight: point.weight,
+    diseaseType: point.diseaseType,
+    verificationStatus: point.verificationStatus,
+    threatLevel: point.threatLevel,
+    createdAt: point.createdAt,
+    district: point.district,
+    count: point.count,
+  }
 }
 
 export function haversineKm(
