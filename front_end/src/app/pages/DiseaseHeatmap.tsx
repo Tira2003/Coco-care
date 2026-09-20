@@ -15,8 +15,7 @@ import {
 } from '@/app/diseaseMapFilters'
 import { SRI_LANKA_DISTRICTS } from '@/constants/districts'
 import type { HeatmapPoint } from '@/types'
-
-const SELECTED_FARM_KEY = 'coco_selected_farm'
+import { readSelectedFarmId, resolveSelectedFarm } from '@/lib/selectedFarm'
 
 function verificationLabel(status: HeatmapPoint['verificationStatus']) {
   return status === 'ai_suspected' ? 'AI suspected' : 'Verified'
@@ -37,10 +36,8 @@ export function DiseaseHeatmap() {
   })
 
   const selectedFarmId = useMemo(() => {
-    const stored = localStorage.getItem(SELECTED_FARM_KEY)
     const farms = profile?.farms ?? []
-    if (stored && farms.some((farm) => farm.id === stored)) return stored
-    return farms[0]?.id
+    return resolveSelectedFarm(farms, readSelectedFarmId())?.id
   }, [profile?.farms])
 
   const dateRangeInvalid = Boolean(fromDate && toDate && fromDate > toDate)

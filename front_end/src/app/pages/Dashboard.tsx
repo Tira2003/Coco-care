@@ -3,6 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { farmApi, reportsApi, diseaseMapApi, weatherApi } from '@/api/services'
 import {
+  persistSelectedFarm,
+  readSelectedFarmId,
+  resolveSelectedFarm,
+} from '@/lib/selectedFarm'
+import {
   getTimeBasedGreeting,
   MobileWeatherHero,
   MobileTwinStats,
@@ -16,18 +21,10 @@ import {
   DesktopWeatherForecast,
 } from '../components/dashboard'
 
-const SELECTED_FARM_KEY = 'coco_selected_farm'
-
 export function Dashboard() {
   const { user } = useAuth()
   const greeting = getTimeBasedGreeting()
-  const [selectedFarmId, setSelectedFarmId] = useState<string>(() => {
-    try {
-      return localStorage.getItem(SELECTED_FARM_KEY) ?? ''
-    } catch {
-      return ''
-    }
-  })
+  const [selectedFarmId, setSelectedFarmId] = useState<string>(() => readSelectedFarmId())
 
   const { data: profile } = useQuery({
     queryKey: ['farmer', 'profile'],
@@ -35,32 +32,21 @@ export function Dashboard() {
   })
 
   const farms = profile?.farms ?? []
-  const selectedFarm =
-    farms.find((farm) => farm.id === selectedFarmId) ?? farms[0]
+  const selectedFarm = resolveSelectedFarm(farms, selectedFarmId)
   const farmRegion = selectedFarm?.location ?? 'Kurunegala'
   const totalFarmsCount = farms.length
 
   useEffect(() => {
     if (!farms.length) return
-    const exists = farms.some((farm) => farm.id === selectedFarmId)
-    if (!exists) {
-      const nextId = farms[0]?.id ?? ''
-      setSelectedFarmId(nextId)
-      try {
-        if (nextId) localStorage.setItem(SELECTED_FARM_KEY, nextId)
-      } catch {
-        /* ignore */
-      }
-    }
+    const next = resolveSelectedFarm(farms, selectedFarmId)
+    if (!next || next.id === selectedFarmId) return
+    setSelectedFarmId(next.id)
+    persistSelectedFarm(next.id)
   }, [farms, selectedFarmId])
 
   const handleSelectFarm = (farmId: string) => {
     setSelectedFarmId(farmId)
-    try {
-      localStorage.setItem(SELECTED_FARM_KEY, farmId)
-    } catch {
-      /* ignore */
-    }
+    persistSelectedFarm(farmId)
   }
 
   const { data: reports = [] } = useQuery({

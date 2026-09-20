@@ -80,6 +80,10 @@ export const farmApi = {
     const { data } = await apiClient.delete<{ ok: boolean }>(`/farms/${id}`)
     return data
   },
+  setPrimary: async (farmId: string) => {
+    const { data } = await apiClient.patch<{ farms: Farm[] }>('/farmers/primary-farm', { farmId })
+    return data
+  },
 }
 
 export const diagnosisApi = {

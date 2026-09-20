@@ -86,6 +86,7 @@ export interface Farm {
   longitude: number
   acreage: number
   treeCount: number
+  isPrimary?: boolean
 }
 
 export interface DiseaseReport {

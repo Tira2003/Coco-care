@@ -66,11 +66,12 @@ export function DashboardLayout() {
     queryKey: ['farmer', 'profile'],
     queryFn: farmApi.profile,
   })
-  const primaryFarm = farmerProfile?.farms?.[0]
-  const farmName = primaryFarm?.name ?? 'Green Valley Farm'
-  const farmLocation = primaryFarm?.location ?? 'Kurunegala'
-  const treeCount = primaryFarm?.treeCount ?? 320
-  const landArea = primaryFarm?.landArea ? `${primaryFarm.landArea} ha` : '4.2 ha'
+  const primaryFarm =
+    farmerProfile?.farms?.find((farm) => farm.isPrimary) ?? farmerProfile?.farms?.[0]
+  const farmName = primaryFarm?.name ?? 'Your farm'
+  const farmLocation = primaryFarm?.location ?? 'Sri Lanka'
+  const treeCount = primaryFarm?.treeCount ?? 0
+  const landArea = primaryFarm ? `${primaryFarm.acreage} ac` : '—'
   const aiScansCount = farmerReports.length || 0
 
   const initials = (user?.name ?? 'Sunil Perera')

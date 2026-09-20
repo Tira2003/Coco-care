@@ -7,12 +7,15 @@ import {
   MapPin,
   Phone,
   Plus,
+  Star,
   Trash2,
+  Trees,
 } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { farmApi } from '@/api/services'
 import { useAuth } from '@/contexts/AuthContext'
+import { persistSelectedFarm } from '@/lib/selectedFarm'
 import type { Farm, User } from '@/types'
 import {
   FarmLocationPicker,
@@ -113,6 +116,15 @@ export function Profile() {
     queryClient.invalidateQueries({ queryKey: ['farmer', 'profile'] })
   }
 
+  const applyFarms = (farms: Farm[]) => {
+    queryClient.setQueryData<{ user: User; farms: Farm[] }>(
+      ['farmer', 'profile'],
+      (old) => (old ? { ...old, farms } : old),
+    )
+    const primary = farms.find((farm) => farm.isPrimary)
+    if (primary) persistSelectedFarm(primary.id)
+  }
+
   const profileMutation = useMutation({
     mutationFn: farmApi.updateProfile,
     onSuccess: (updated) => {
@@ -138,7 +150,7 @@ export function Profile() {
     mutationFn: farmApi.create,
     onSuccess: () => {
       refreshProfile()
-      closeFarmDialog()
+      window.setTimeout(() => closeFarmDialog(), 0)
     },
   })
 
@@ -147,7 +159,7 @@ export function Profile() {
       farmApi.update(id, farm),
     onSuccess: () => {
       refreshProfile()
-      closeFarmDialog()
+      window.setTimeout(() => closeFarmDialog(), 0)
     },
   })
 
@@ -159,6 +171,13 @@ export function Profile() {
     },
   })
 
+  const primaryFarmMutation = useMutation({
+    mutationFn: farmApi.setPrimary,
+    onSuccess: (result) => {
+      applyFarms(result.farms)
+    },
+  })
+
   const farmBusy = createFarmMutation.isPending || updateFarmMutation.isPending
   const farmMutationError = getErrorMessage(
     createFarmMutation.error ?? updateFarmMutation.error,
@@ -167,6 +186,10 @@ export function Profile() {
   const deleteError = getErrorMessage(
     deleteFarmMutation.error,
     'Could not delete farm. Please try again.',
+  )
+  const primaryError = getErrorMessage(
+    primaryFarmMutation.error,
+    'Could not set this as your primary farm.',
   )
   const profileError = getErrorMessage(
     profileMutation.error,
@@ -244,8 +267,16 @@ export function Profile() {
   const handlePasswordSubmit = (e: FormEvent) => {
     e.preventDefault()
     setPasswordError('')
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters.')
+      return
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordError('New passwords do not match.')
+      return
+    }
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      setPasswordError('New password must be different from the current password.')
       return
     }
     passwordMutation.mutate({
@@ -286,7 +317,7 @@ export function Profile() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#2d5f2e]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
       </div>
     )
   }
@@ -294,19 +325,23 @@ export function Profile() {
   return (
     <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
       <div>
-        <h1 className="mb-1 text-2xl text-[#1a2e1a] sm:mb-2 sm:text-3xl">Profile</h1>
-        <p className="text-sm text-[#6b7c6b] sm:text-base">Your account and registered farms.</p>
+        <h1 className="font-['Bricolage_Grotesque',Inter,sans-serif] mb-1 text-2xl font-bold tracking-tight text-[#10241A] sm:mb-2 sm:text-3xl">
+          Profile
+        </h1>
+        <p className="text-sm text-[#5C6B60] sm:text-base">Your account and registered farms.</p>
       </div>
 
-      <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-[#E6EADF] bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2d5f2e] to-[#1a2e1a] text-xl text-white sm:h-20 sm:w-20 sm:text-2xl">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#123524] font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold text-white sm:h-20 sm:w-20 sm:text-2xl">
               {initials}
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-xl text-gray-900 sm:text-2xl">{displayUser?.name}</h2>
-              <p className="truncate text-sm text-gray-600 capitalize sm:text-base">
+              <h2 className="truncate font-['Bricolage_Grotesque',Inter,sans-serif] text-xl font-bold tracking-tight text-[#10241A] sm:text-2xl">
+                {displayUser?.name}
+              </h2>
+              <p className="truncate text-sm capitalize text-[#5C6B60] sm:text-base">
                 {displayUser?.role} · @{displayUser?.username}
               </p>
             </div>
@@ -315,7 +350,7 @@ export function Profile() {
             <button
               type="button"
               onClick={openProfileDialog}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-sm text-[#2d5f2e] hover:bg-green-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <Edit2 className="h-4 w-4" />
               Edit
@@ -323,7 +358,7 @@ export function Profile() {
             <button
               type="button"
               onClick={openPasswordDialog}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-sm text-[#2d5f2e] hover:bg-green-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#E6EADF] px-4 py-2 text-sm font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
             >
               <KeyRound className="h-4 w-4" />
               Password
@@ -331,68 +366,56 @@ export function Profile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
           <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={displayUser?.phone ?? 'N/A'} />
           <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={displayUser?.email ?? 'N/A'} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-[#E6EADF] bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-lg text-gray-900">My Farms</h3>
+          <div>
+            <h3 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
+              My Farms
+            </h3>
+            <p className="mt-0.5 text-sm text-[#5C6B60]">
+              Edit details, remove unused estates, and choose which farm is primary.
+            </p>
+          </div>
           <button
             type="button"
             onClick={openCreateFarm}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#2d5f2e] px-3 py-2 text-sm text-white hover:bg-[#1a2e1a] sm:w-auto"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Add Farm
           </button>
         </div>
 
+        {primaryFarmMutation.isError ? (
+          <p className="mb-3 text-sm text-red-600">{primaryError}</p>
+        ) : null}
+
         <div className="space-y-3">
           {farms.length === 0 ? (
-            <p className="text-sm text-gray-500">No farms registered yet.</p>
+            <div className="rounded-2xl border border-dashed border-[#E6EADF] bg-[#F6F7F2] px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-[#10241A]">No farms registered yet.</p>
+              <p className="mt-1 text-sm text-[#5C6B60]">Add an estate to start diagnosis and weather alerts.</p>
+            </div>
           ) : (
             farms.map((farm) => (
-              <div
+              <FarmCard
                 key={farm.id}
-                className="flex items-start justify-between gap-3 rounded-lg bg-gray-50 p-3 sm:p-4"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <Home className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#2d5f2e]" />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-gray-900">{farm.name}</div>
-                    <div className="flex items-start gap-1 text-sm text-gray-600">
-                      <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                      <span className="break-words">
-                        {farm.location} · {farm.acreage} acres · {farm.treeCount} trees
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-shrink-0 gap-1">
-                  <button
-                    type="button"
-                    title="Edit farm"
-                    onClick={() => openEditFarm(farm)}
-                    className="rounded-lg p-2.5 text-[#2d5f2e] hover:bg-green-100"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Delete farm"
-                    onClick={() => {
-                      deleteFarmMutation.reset()
-                      setDeleteTarget(farm)
-                    }}
-                    className="rounded-lg p-2.5 text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+                farm={farm}
+                canDelete={farms.length > 1}
+                primaryPending={primaryFarmMutation.isPending && primaryFarmMutation.variables === farm.id}
+                onEdit={() => openEditFarm(farm)}
+                onDelete={() => {
+                  deleteFarmMutation.reset()
+                  setDeleteTarget(farm)
+                }}
+                onSetPrimary={() => primaryFarmMutation.mutate(farm.id)}
+              />
             ))
           )}
         </div>
@@ -401,10 +424,12 @@ export function Profile() {
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Edit Profile
+            </DialogTitle>
             <DialogDescription>Update your contact details.</DialogDescription>
           </DialogHeader>
-          <form id="profile-form" onSubmit={handleProfileSubmit} className="grid gap-3">
+          <form onSubmit={handleProfileSubmit} className="grid gap-3">
             <TextField
               label="Name"
               value={profileForm.name}
@@ -423,36 +448,37 @@ export function Profile() {
               onChange={(value) => setProfileForm({ ...profileForm, phone: value })}
             />
             {profileMutation.isError ? (
-              <p className="text-xs text-red-600">{profileError}</p>
+              <p className="text-sm text-red-600">{profileError}</p>
             ) : null}
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setShowProfileDialog(false)}
+                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={profileMutation.isPending}
+                className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
+              >
+                {profileMutation.isPending ? 'Saving…' : 'Save Changes'}
+              </button>
+            </DialogFooter>
           </form>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setShowProfileDialog(false)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="profile-form"
-              disabled={profileMutation.isPending}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
-            >
-              {profileMutation.isPending ? 'Saving...' : 'Save Changes'}
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Change Password
+            </DialogTitle>
             <DialogDescription>Enter your current password before setting a new one.</DialogDescription>
           </DialogHeader>
-          <form id="password-form" onSubmit={handlePasswordSubmit} className="grid gap-3">
+          <form onSubmit={handlePasswordSubmit} className="grid gap-3">
             <TextField
               label="Current password"
               type="password"
@@ -479,41 +505,47 @@ export function Profile() {
               required
             />
             {passwordError || passwordMutation.isError ? (
-              <p className="text-xs text-red-600">
+              <p className="text-sm text-red-600">
                 {passwordError || passwordMutationError}
               </p>
             ) : null}
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setShowPasswordDialog(false)}
+                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={passwordMutation.isPending}
+                className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
+              >
+                {passwordMutation.isPending ? 'Saving…' : 'Change Password'}
+              </button>
+            </DialogFooter>
           </form>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setShowPasswordDialog(false)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="password-form"
-              disabled={passwordMutation.isPending}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
-            >
-              {passwordMutation.isPending ? 'Saving...' : 'Change Password'}
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showFarmDialog} onOpenChange={(open) => (open ? setShowFarmDialog(true) : closeFarmDialog())}>
+      <Dialog
+        open={showFarmDialog}
+        onOpenChange={(open) => {
+          if (!open) closeFarmDialog()
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingFarm ? 'Edit Farm' : 'Add New Farm'}</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              {editingFarm ? 'Edit Farm' : 'Add New Farm'}
+            </DialogTitle>
             <DialogDescription>
               Register and maintain coconut estates for disease reporting and diagnosis.
             </DialogDescription>
           </DialogHeader>
 
-          <form id="farm-form" onSubmit={handleFarmSubmit} className="grid grid-cols-1 gap-3">
+          <form onSubmit={handleFarmSubmit} className="grid grid-cols-1 gap-3">
             <TextField
               label="Farm name"
               placeholder="e.g. Akeel Coconut Estate"
@@ -532,7 +564,7 @@ export function Profile() {
               />
             ) : null}
 
-            {locationError ? <p className="text-xs text-red-600">{locationError}</p> : null}
+            {locationError ? <p className="text-sm text-red-600">{locationError}</p> : null}
 
             <div className="grid grid-cols-2 gap-3">
               <TextField
@@ -555,49 +587,55 @@ export function Profile() {
             </div>
 
             {createFarmMutation.isError || updateFarmMutation.isError ? (
-              <p className="text-xs text-red-600">{farmMutationError}</p>
+              <p className="text-sm text-red-600">{farmMutationError}</p>
             ) : null}
-          </form>
 
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={closeFarmDialog}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="farm-form"
-              disabled={farmBusy}
-              className="px-4 py-2 text-sm bg-[#2d5f2e] text-white rounded-lg hover:bg-[#1a2e1a] disabled:opacity-60"
-            >
-              {farmBusy ? 'Saving...' : 'Save Farm'}
-            </button>
-          </DialogFooter>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={closeFarmDialog}
+                className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={farmBusy}
+                className="rounded-full bg-[#123524] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
+              >
+                {farmBusy ? 'Saving…' : 'Save Farm'}
+              </button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Farm</DialogTitle>
+            <DialogTitle className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+              Delete Farm
+            </DialogTitle>
             <DialogDescription>
-              This is only allowed for farms with no disease reports or alerts.
+              Farms with disease reports or alerts cannot be removed. Keep at least one farm on your account.
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-[#10241A]">
             Delete {deleteTarget?.name}? This action cannot be undone.
           </p>
+          {deleteTarget?.isPrimary ? (
+            <p className="text-sm text-[#5C6B60]">
+              This is your primary farm. Another estate will become primary after you delete it.
+            </p>
+          ) : null}
           {deleteFarmMutation.isError ? (
-            <p className="text-xs text-red-600">{deleteError}</p>
+            <p className="text-sm text-red-600">{deleteError}</p>
           ) : null}
           <DialogFooter>
             <button
               type="button"
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-[#5C6B60] hover:text-[#10241A]"
             >
               Cancel
             </button>
@@ -605,9 +643,9 @@ export function Profile() {
               type="button"
               disabled={deleteFarmMutation.isPending || !deleteTarget}
               onClick={() => deleteTarget && deleteFarmMutation.mutate(deleteTarget.id)}
-              className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60"
+              className="rounded-full bg-[#E5484D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c73e43] disabled:opacity-60"
             >
-              {deleteFarmMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteFarmMutation.isPending ? 'Deleting…' : 'Delete'}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -616,13 +654,120 @@ export function Profile() {
   )
 }
 
+function FarmCard({
+  farm,
+  canDelete,
+  primaryPending,
+  onEdit,
+  onDelete,
+  onSetPrimary,
+}: {
+  farm: Farm
+  canDelete: boolean
+  primaryPending: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onSetPrimary: () => void
+}) {
+  const primary = Boolean(farm.isPrimary)
+
+  return (
+    <div
+      className={`rounded-2xl border p-4 sm:p-5 ${
+        primary
+          ? 'border-[#123524]/20 bg-white shadow-[0_1px_0_rgba(18,53,36,0.04)]'
+          : 'border-[#E6EADF] bg-[#F6F7F2]'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+              primary ? 'bg-[#123524] text-[#C9F169]' : 'bg-[#EDF3E0] text-[#123524]'
+            }`}
+          >
+            <Home className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="truncate font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+                {farm.name}
+              </h4>
+              {primary ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#123524] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                  <Star className="h-3 w-3 fill-current" />
+                  Primary
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-1 flex items-start gap-1 text-sm text-[#5C6B60]">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+              <span className="break-words">{farm.location}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#E6EADF] pt-3">
+        <div className={`rounded-2xl px-3 py-2 ${primary ? 'bg-[#F6F7F2]' : 'bg-white'}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#7FA81B]">Acreage</div>
+          <div className="font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+            {farm.acreage} ac
+          </div>
+        </div>
+        <div className={`rounded-2xl px-3 py-2 ${primary ? 'bg-[#F6F7F2]' : 'bg-white'}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#7FA81B]">Trees</div>
+          <div className="inline-flex items-center gap-1 font-['Bricolage_Grotesque',Inter,sans-serif] font-bold text-[#10241A]">
+            <Trees className="h-3.5 w-3.5 text-[#123524]" />
+            {farm.treeCount}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {primary ? null : (
+          <button
+            type="button"
+            onClick={onSetPrimary}
+            disabled={primaryPending}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-[#E6EADF] bg-white px-3 py-2 text-xs font-semibold text-[#10241A] hover:bg-[#F1F5EA] disabled:opacity-60"
+          >
+            {primaryPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Star className="h-3.5 w-3.5" />}
+            Set as primary
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-[#E6EADF] bg-white px-3 py-2 text-xs font-semibold text-[#10241A] hover:bg-[#F1F5EA]"
+        >
+          <Edit2 className="h-3.5 w-3.5" />
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={!canDelete}
+          title={canDelete ? 'Delete farm' : 'Keep at least one farm on your account'}
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-[#E6EADF] bg-white px-3 py-2 text-xs font-semibold text-[#E5484D] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-      <span className="text-[#2d5f2e]">{icon}</span>
-      <div>
-        <div className="text-gray-500 text-xs">{label}</div>
-        <div className="text-gray-900">{value}</div>
+    <div className="flex items-center gap-3 rounded-2xl bg-[#F6F7F2] p-3.5">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDF3E0] text-[#123524]">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#7FA81B]">{label}</div>
+        <div className="truncate font-semibold text-[#10241A]">{value}</div>
       </div>
     </div>
   )
@@ -649,7 +794,7 @@ function TextField({
 }) {
   return (
     <label className="space-y-1">
-      <span className="text-sm text-gray-600">{label}</span>
+      <span className="text-sm font-semibold text-[#10241A]">{label}</span>
       <input
         type={type}
         placeholder={placeholder}
@@ -657,7 +802,7 @@ function TextField({
         min={min}
         step={step}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2d5f2e]/30"
+        className="w-full rounded-2xl border border-[#E6EADF] bg-[#F6F7F2] px-3 py-2.5 text-sm text-[#10241A] outline-none focus:border-[#123524] focus:bg-white"
         required={required}
       />
     </label>

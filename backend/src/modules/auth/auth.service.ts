@@ -1,17 +1,30 @@
 import { pool } from '../../db/pool.js'
 import { centroidForLocation, DEFAULT_DISTRICT } from '../../constants/districts.js'
-import { badRequest, conflict, forbidden, unauthorized } from '../../utils/errors.js'
+import { badRequest, conflict, forbidden, notFound, unauthorized } from '../../utils/errors.js'
 import { hashPassword, verifyPassword } from '../../utils/password.js'
 import { signToken } from '../../utils/jwt.js'
 import type { AuthAccount, Farm, User } from '../../types/index.js'
-import type { ChangePasswordInput, FarmInput, LoginInput, RegisterInput } from './auth.schemas.js'
+import type {
+  ChangePasswordInput,
+  FarmInput,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from './auth.schemas.js'
 import {
+  countFarmDependencies,
+  deleteFarmForUser,
   emailExists,
+  emailTakenByOther,
   findAccountById,
   findAccountByUsername,
+  findFarmByIdForUser,
   insertFarm,
   insertFarmer,
   listFarmsByUserId,
+  setPrimaryFarmId,
+  updateFarmerContact,
+  updateFarmForUser,
   updatePassword,
   usernameExists,
 } from './auth.repository.js'
@@ -156,7 +169,11 @@ export async function changePassword(
 
   const ok = await verifyPassword(input.currentPassword, account.passwordHash)
   if (!ok) {
-    throw unauthorized('Current password is incorrect')
+    throw badRequest('Current password is incorrect')
+  }
+
+  if (input.currentPassword === input.newPassword) {
+    throw badRequest('New password must be different from the current password')
   }
 
   const nextHash = await hashPassword(input.newPassword)
@@ -174,4 +191,86 @@ export async function getFarmerProfile(userId: string) {
     user: toPublicUser(account, farms),
     farms,
   }
+}
+
+export async function updateFarmerProfile(userId: string, input: UpdateProfileInput) {
+  const account = await findAccountById(userId, 'farmer')
+  if (!account) {
+    throw unauthorized('Invalid or expired token')
+  }
+
+  const name = input.name.trim()
+  const email =
+    typeof input.email === 'string' && input.email.trim() ? input.email.trim() : null
+  const phone =
+    typeof input.phone === 'string' && input.phone.trim() ? input.phone.trim() : null
+
+  if (email && (await emailTakenByOther(email, account.id))) {
+    throw conflict('An account with this email already exists')
+  }
+
+  const updated = await updateFarmerContact(account.id, { name, email, phone })
+  if (!updated) {
+    throw unauthorized('Invalid or expired token')
+  }
+
+  const farms = await listFarmsByUserId(updated.id)
+  return toPublicUser(updated, farms)
+}
+
+export async function setFarmerPrimaryFarm(userId: string, farmId: string) {
+  const farm = await findFarmByIdForUser(farmId, userId)
+  if (!farm) {
+    throw notFound('Farm not found')
+  }
+  await setPrimaryFarmId(userId, farmId)
+  return listFarmsByUserId(userId)
+}
+
+export async function deleteFarmerFarm(userId: string, farmId: string) {
+  const farms = await listFarmsByUserId(userId)
+  const farm = farms.find((item) => item.id === farmId)
+  if (!farm) {
+    throw notFound('Farm not found')
+  }
+  if (farms.length === 1) {
+    throw badRequest('Keep at least one farm on your account.')
+  }
+
+  const usage = await countFarmDependencies(farmId)
+  if (usage.reports > 0 || usage.alerts > 0) {
+    throw conflict('This farm has disease reports or alerts, so it cannot be deleted.')
+  }
+
+  if (farm.isPrimary) {
+    const nextPrimary = farms.find((item) => item.id !== farmId)
+    if (nextPrimary) {
+      await setPrimaryFarmId(userId, nextPrimary.id)
+    }
+  }
+
+  const deleted = await deleteFarmForUser(farmId, userId)
+  if (!deleted) {
+    throw notFound('Farm not found')
+  }
+  return { ok: true as const }
+}
+
+export async function updateFarmerFarm(
+  userId: string,
+  farmId: string,
+  input: {
+    name: string
+    location: string
+    latitude: number
+    longitude: number
+    acreage: number
+    treeCount: number
+  },
+) {
+  const farm = await updateFarmForUser(farmId, userId, input)
+  if (!farm) {
+    throw notFound('Farm not found')
+  }
+  return farm
 }
