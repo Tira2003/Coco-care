@@ -331,7 +331,7 @@ export function DesktopSidebar({
         >
           <div className="border-b border-[#E6EADF] p-3">
             <div className="truncate text-xs font-bold text-[#10241A]">{user?.name}</div>
-            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} Â· {user?.role}</div>
+            <div className="truncate text-[11px] text-[#5C6B60]">@{user?.username} · {user?.role}</div>
             {user?.email && <div className="truncate text-[10px] text-[#5C6B60] mt-0.5">{user.email}</div>}
           </div>
           <div className="p-1 space-y-0.5">
