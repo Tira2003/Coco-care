@@ -195,7 +195,7 @@ export function LoginPage() {
               </span>
             </h1>
             <p className="text-[#5C6B60] text-sm sm:text-base mt-2">
-              Log in to your plantation workspace â€” your grove has been waiting.
+              Log in to your plantation workspace — your grove has been waiting.
             </p>
           </header>
 
@@ -304,7 +304,7 @@ export function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Logging inâ€¦</span>
+                  <span>Logging in…</span>
                 </>
               ) : (
                 <>
@@ -417,7 +417,7 @@ export function LoginPage() {
               disabled={resetLoading}
               className="px-5 py-2 rounded-full text-sm font-semibold bg-[#123524] text-white hover:bg-[#0C281B] disabled:opacity-60 transition-colors"
             >
-              {resetLoading ? 'Savingâ€¦' : 'Change Password'}
+              {resetLoading ? 'Saving…' : 'Change Password'}
             </button>
           </DialogFooter>
         </DialogContent>
