@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import {
+  Bell,
   ClipboardList,
   LogOut,
   Mail,
@@ -9,8 +10,10 @@ import {
   Phone,
   Shield,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { CocoCareLogo } from '@/app/components/CocoCareLogo'
+import { notificationsApi } from '@/api/services'
 
 export function OfficerLayout() {
   const location = useLocation()
@@ -19,6 +22,12 @@ export function OfficerLayout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
+  const { data: inbox } = useQuery({
+    queryKey: ['notifications', 'inbox'],
+    queryFn: notificationsApi.list,
+    refetchInterval: 20_000,
+  })
+  const unreadCount = inbox?.unreadCount ?? 0
   const initials = (user?.name ?? 'O')
     .split(' ')
     .map((n) => n[0])
@@ -84,10 +93,39 @@ export function OfficerLayout() {
                 <MessageSquare className="h-4 w-4" />
                 Consultations
               </Link>
+              <Link
+                to="/officer/notifications"
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+                  location.pathname.startsWith('/officer/notifications')
+                    ? 'bg-[#2d5f2e] text-white'
+                    : 'text-gray-600 hover:bg-green-50'
+                }`}
+              >
+                <Bell className="h-4 w-4" />
+                Inbox
+                {unreadCount > 0 ? (
+                  <span className="min-w-[1.1rem] rounded-full bg-[#E5484D] px-1.5 text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : null}
+              </Link>
             </nav>
           </div>
 
-          <div className="relative shrink-0" ref={profileRef}>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/officer/notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-white text-[#2d5f2e] hover:bg-green-50"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 ? (
+                <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E5484D] px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : null}
+            </Link>
+            <div className="relative shrink-0" ref={profileRef}>
             <button
               type="button"
               onClick={() => setProfileOpen((o) => !o)}
@@ -164,6 +202,7 @@ export function OfficerLayout() {
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </header>

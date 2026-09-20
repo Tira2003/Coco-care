@@ -1,225 +1,145 @@
-import { AlertTriangle, CheckCircle, Bell, X, Loader2 } from 'lucide-react'
+import { Bell, CheckCheck, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { reportsApi, diseaseMapApi, notificationsApi } from '@/api/services'
+import { notificationsApi } from '@/api/services'
+import { useAuth } from '@/contexts/AuthContext'
+import type { InboxCategory, InboxNotification } from '@/types'
+import { NotificationCard } from '@/app/notifications/NotificationCard'
 
-interface NotificationItem {
-  id: string
-  type: 'alert' | 'success' | 'info'
-  title: string
-  message: string
-  time: string
-  read: boolean
-  source: 'broadcast' | 'disease' | 'report'
-}
+type Filter = 'all' | 'unread' | InboxCategory
+
+const FILTERS: Array<{ id: Filter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'unread', label: 'Unread' },
+  { id: 'outbreak', label: 'Outbreaks' },
+  { id: 'report', label: 'Reports' },
+  { id: 'consultation', label: 'Messages' },
+  { id: 'announcement', label: 'Announcements' },
+]
 
 export function Notifications() {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<Filter>('all')
+  const isOfficer = user?.role === 'officer'
 
-  const { data: reports = [], isLoading: reportsLoading } = useQuery({
-    queryKey: ['reports', 'my'],
-    queryFn: reportsApi.my,
-  })
-
-  const { data: diseaseAlerts = [], isLoading: alertsLoading } = useQuery({
-    queryKey: ['disease-map', 'alerts'],
-    queryFn: diseaseMapApi.alerts,
-  })
-
-  const { data: broadcasts = [], isLoading: broadcastsLoading } = useQuery({
-    queryKey: ['notifications', 'list'],
+  const { data, isLoading } = useQuery({
+    queryKey: ['notifications', 'inbox'],
     queryFn: notificationsApi.list,
+    refetchInterval: 20_000,
   })
 
-  const markBroadcastReadMutation = useMutation({
+  const items = data?.items ?? []
+  const unreadCount = data?.unreadCount ?? items.filter((item) => !item.read).length
+
+  const markReadMutation = useMutation({
     mutationFn: notificationsApi.markRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+  const dismissMutation = useMutation({
+    mutationFn: notificationsApi.dismiss,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  })
+  const markAllMutation = useMutation({
+    mutationFn: notificationsApi.markAllRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
 
-  const markDiseaseAlertReadMutation = useMutation({
-    mutationFn: diseaseMapApi.markAlertRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disease-map', 'alerts'] }),
-  })
-
-  const notifications = useMemo(() => {
-    const items: NotificationItem[] = []
-
-    broadcasts.forEach((b) => {
-      items.push({
-        id: b.id,
-        type: 'alert',
-        title: b.title,
-        message: b.message,
-        time: new Date(b.createdAt).toLocaleString(),
-        read: b.read,
-        source: 'broadcast',
-      })
+  const visible = useMemo(() => {
+    return items.filter((item) => {
+      if (filter === 'unread') return !item.read
+      if (filter === 'all') return true
+      return item.category === filter
     })
+  }, [items, filter])
 
-    diseaseAlerts.forEach((a) => {
-      const isSuspected = a.alertType === 'ai_suspected'
-      items.push({
-        id: a.id,
-        type: isSuspected ? 'info' : 'alert',
-        title: isSuspected
-          ? `AI-suspected nearby ${a.diseaseType}`
-          : `Verified nearby ${a.diseaseType}`,
-        message: a.message,
-        time: new Date(a.createdAt).toLocaleString(),
-        read: a.read,
-        source: 'disease',
-      })
-    })
-
-    reports.forEach((r) => {
-      items.push({
-        id: `report-${r.id}`,
-        type: r.status === 'verified' ? 'success' : r.status === 'pending' ? 'info' : 'alert',
-        title: r.status === 'pending' ? 'Diagnosis Pending Review' : `Report ${r.status}`,
-        message: `${r.finalResult ?? r.imageResult ?? 'Disease scan'} — ${Math.round(r.confidence * 100)}% confidence.`,
-        time: new Date(r.createdAt).toLocaleDateString(),
-        read: r.status !== 'pending',
-        source: 'report',
-      })
-    })
-
-    return items
-  }, [reports, diseaseAlerts, broadcasts])
-
-  const visible = notifications
-    .filter((n) => !deletedIds.has(n.id))
-    .filter((n) => {
-      if (filter === 'unread') return !n.read
-      if (filter === 'read') return n.read
-      return true
-    })
-
-  const unreadCount = notifications.filter(
-    (n) => !n.read && !deletedIds.has(n.id),
-  ).length
-  const isLoading = reportsLoading || alertsLoading || broadcastsLoading
-
-  const markAsRead = (item: NotificationItem) => {
-    if (item.source === 'broadcast') {
-      markBroadcastReadMutation.mutate(item.id)
-    } else if (item.source === 'disease') {
-      markDiseaseAlertReadMutation.mutate(item.id)
-    }
-  }
-
-  const deleteNotification = (id: string) => setDeletedIds((prev) => new Set(prev).add(id))
-  const markAllAsRead = () => {
-    notifications.forEach((n) => {
-      if (!n.read) markAsRead(n)
-    })
+  const openItem = (item: InboxNotification) => {
+    if (!item.read) markReadMutation.mutate(item.id)
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="mb-1 text-2xl text-[#1a2e1a] sm:mb-2 sm:text-3xl">Notifications</h1>
-          <p className="text-sm text-[#6b7c6b] sm:text-base">
-            Admin broadcasts, nearby outbreak alerts, and your report updates.
+          <h1 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-2xl font-bold text-[#10241A] sm:text-3xl">
+            Notifications
+          </h1>
+          <p className="mt-1 text-sm text-[#5C6B60]">
+            {isOfficer
+              ? 'Farmer consultations, pending diagnoses in your district, and CRI announcements.'
+              : 'Outbreaks near your farm, diagnosis updates, officer replies, and CRI announcements.'}
           </p>
         </div>
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <button
-            onClick={markAllAsRead}
-            className="min-h-10 shrink-0 self-start text-sm text-[#2d5f2e] hover:underline"
+            type="button"
+            onClick={() => markAllMutation.mutate()}
+            disabled={markAllMutation.isPending}
+            className="inline-flex min-h-10 shrink-0 items-center gap-1.5 self-start rounded-full bg-[#123524] px-4 text-sm font-semibold text-white hover:bg-[#0C281B] disabled:opacity-60"
           >
+            <CheckCheck className="h-4 w-4" />
             Mark all as read
           </button>
-        )}
+        ) : null}
       </div>
 
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {(['all', 'unread', 'read'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`min-h-10 shrink-0 rounded-lg px-4 py-2 text-sm capitalize ${
-              filter === f
-                ? 'bg-[#2d5f2e] text-white'
-                : 'border border-gray-200 bg-white text-gray-700'
-            }`}
-          >
-            {f} {f === 'unread' && unreadCount > 0 ? `(${unreadCount})` : ''}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const count =
+            f.id === 'unread'
+              ? unreadCount
+              : f.id === 'all'
+                ? items.length
+                : items.filter((item) => item.category === f.id).length
+          if (f.id !== 'all' && f.id !== 'unread' && count === 0) return null
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilter(f.id)}
+              className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-medium capitalize ${
+                filter === f.id
+                  ? 'bg-[#123524] text-white'
+                  : 'border border-[#E6EADF] bg-white text-[#10241A] hover:bg-[#F1F5EA]'
+              }`}
+            >
+              {f.label}
+              {count > 0 ? ` (${count})` : ''}
+            </button>
+          )
+        })}
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-[#2d5f2e]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-2xl border border-green-100 bg-white p-8 text-center text-gray-500 sm:p-12">
-          No notifications to show.
+        <div className="rounded-3xl border border-[#E6EADF] bg-white px-6 py-16 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#EDF3E0] text-[#123524]">
+            <Bell className="h-6 w-6" />
+          </div>
+          <h2 className="font-['Bricolage_Grotesque',Inter,sans-serif] text-lg font-bold text-[#10241A]">
+            {filter === 'unread' ? 'You are caught up' : 'No notifications yet'}
+          </h2>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-[#5C6B60]">
+            {filter === 'unread'
+              ? 'New outbreak alerts, diagnosis results, and officer replies will show up here.'
+              : 'When something needs your attention, it will land in this inbox.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {visible.map((notification) => (
+          {visible.map((item) => (
             <NotificationCard
-              key={notification.id}
-              notification={notification}
-              onRead={() => markAsRead(notification)}
-              onDelete={() => deleteNotification(notification.id)}
+              key={item.id}
+              item={item}
+              onOpen={openItem}
+              onDismiss={(n) => dismissMutation.mutate(n.id)}
             />
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-function NotificationCard({
-  notification,
-  onRead,
-  onDelete,
-}: {
-  notification: NotificationItem
-  onRead: () => void
-  onDelete: () => void
-}) {
-  const icons = {
-    alert: <AlertTriangle className="h-5 w-5 text-red-600" />,
-    success: <CheckCircle className="h-5 w-5 text-green-600" />,
-    info: <Bell className="h-5 w-5 text-blue-600" />,
-  }
-
-  const canMarkRead = notification.source === 'broadcast' || notification.source === 'disease'
-
-  return (
-    <div
-      className={`flex gap-3 rounded-xl border bg-white p-3 sm:gap-4 sm:p-4 ${
-        notification.read ? 'border-gray-100 opacity-75' : 'border-green-200'
-      }`}
-    >
-      <div className="mt-0.5 shrink-0">{icons[notification.type]}</div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-medium text-gray-900 sm:text-base">{notification.title}</h3>
-          <button
-            onClick={onDelete}
-            className="flex min-h-9 min-w-9 shrink-0 items-center justify-center text-gray-400 hover:text-gray-600"
-            aria-label="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{notification.message}</p>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-gray-400">{notification.time}</span>
-          {!notification.read && canMarkRead ? (
-            <button onClick={onRead} className="text-xs text-[#2d5f2e] hover:underline">
-              Mark as read
-            </button>
-          ) : null}
-        </div>
-      </div>
     </div>
   )
 }

@@ -204,6 +204,15 @@ export async function upsertAlert(input: {
   )
 }
 
+export async function markAllAlertsRead(userId: string) {
+  await pool.query(
+    `UPDATE disease_alerts
+     SET read_at = COALESCE(read_at, now())
+     WHERE farmer_user_id = $1 AND read_at IS NULL`,
+    [userId],
+  )
+}
+
 export async function markAlertRead(id: string, userId: string) {
   const result = await pool.query<AlertRow>(
     `UPDATE disease_alerts

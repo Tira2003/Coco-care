@@ -22,7 +22,8 @@ import type {
   AdminFarm,
   RegionSummary,
   SystemHealth,
-  AppNotification,
+  BroadcastNotification,
+  InboxResponse,
   NotificationAudience,
   UserRole,
 } from '@/types'
@@ -324,7 +325,7 @@ export const adminApi = {
     return data
   },
   listBroadcasts: async () => {
-    const { data } = await apiClient.get<AppNotification[]>('/admin/notifications')
+    const { data } = await apiClient.get<BroadcastNotification[]>('/admin/notifications')
     return data
   },
   createBroadcast: async (payload: {
@@ -332,18 +333,28 @@ export const adminApi = {
     message: string
     audience: NotificationAudience
   }) => {
-    const { data } = await apiClient.post<AppNotification>('/admin/notifications', payload)
+    const { data } = await apiClient.post<BroadcastNotification>('/admin/notifications', payload)
     return data
   },
 }
 
 export const notificationsApi = {
   list: async () => {
-    const { data } = await apiClient.get<AppNotification[]>('/api/notifications')
+    const { data } = await apiClient.get<InboxResponse>('/api/notifications')
     return data
   },
   markRead: async (id: string) => {
-    const { data } = await apiClient.post<{ ok: boolean }>(`/api/notifications/${id}/read`)
+    const { data } = await apiClient.post<{ ok: boolean }>('/api/notifications/read', { id })
+    return data
+  },
+  dismiss: async (id: string) => {
+    const { data } = await apiClient.post<{ ok: boolean }>('/api/notifications/dismiss', { id })
+    return data
+  },
+  markAllRead: async () => {
+    const { data } = await apiClient.post<{ ok: boolean; unreadCount: number }>(
+      '/api/notifications/read-all',
+    )
     return data
   },
 }

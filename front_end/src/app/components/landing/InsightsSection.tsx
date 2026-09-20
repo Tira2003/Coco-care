@@ -27,7 +27,7 @@ export function InsightsSection({ showToast }: InsightsSectionProps) {
   ]
 
   return (
-    <section className="py-20 sm:py-24" id="insights">
+    <section className="py-20 sm:py-24 scroll-mt-[90px]" id="blog">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7FA81B] mb-3">

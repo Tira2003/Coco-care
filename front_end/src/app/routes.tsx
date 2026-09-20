@@ -63,6 +63,7 @@ export const router = createBrowserRouter([
         children: [
           { path: 'reports', Component: ReportReviewPage },
           { path: 'consultations', Component: OfficerConsultationsPage },
+          { path: 'notifications', Component: Notifications },
         ],
       },
     ],
