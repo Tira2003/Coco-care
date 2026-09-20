@@ -68,7 +68,8 @@ export function LandingFooter() {
               Resources
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm font-medium">
-              <li><a href="#insights" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Field Guides</a></li>
+              <li><a href="#blog" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Blog</a></li>
+              <li><a href="#blog" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Field Guides</a></li>
               <li><a href="#faq" className="text-[#1E382B] hover:text-[#10241A] transition-colors">FAQ</a></li>
               <li><Link to="/login" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Sign In</Link></li>
               <li><Link to="/register" className="text-[#1E382B] hover:text-[#10241A] transition-colors">Create Account</Link></li>
@@ -78,7 +79,7 @@ export function LandingFooter() {
 
           <div>
             <h4 className="font-['Bricolage_Grotesque',sans-serif] font-bold text-[#10241A] mb-4 text-sm">
-              Contact
+              <a href="#contact" className="hover:text-[#123524] transition-colors">Contact Us</a>
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm font-medium">
               <li><a href="mailto:hello@cococare.lk" className="text-[#1E382B] hover:text-[#10241A] transition-colors">hello@cococare.lk</a></li>

@@ -19,6 +19,8 @@ export function LandingHeader() {
     { label: 'Features', href: '#features' },
     { label: 'How it works', href: '#how' },
     { label: 'Roles', href: '#roles' },
+    { label: 'Blog', href: '#blog' },
+    { label: 'Contact Us', href: '#contact' },
   ]
 
   return (

@@ -16,7 +16,7 @@ export function CtaSection({ showToast }: CtaSectionProps) {
   }
 
   return (
-    <section className="py-16 sm:py-20" id="cta">
+    <section className="py-16 sm:py-20 scroll-mt-[90px]" id="contact">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="relative rounded-[32px] overflow-hidden p-10 sm:p-16 text-center text-white shadow-2xl">
           <img
